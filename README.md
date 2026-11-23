@@ -40,16 +40,21 @@ would play.
 | Watch an animation without flushing | right-click > **Preview animations**, or `NJ-Flush.exe /preview clogged` |
 | Remove it | right-click > **Uninstall NJ-Flush...** |
 
-**Settings** (right-click > Settings, saved in `%LOCALAPPDATA%\NJ-Flush\settings.ini`):
+**Settings**: right-click the widget > **Settings...** (or run `NJ-Flush.exe /settings`). Every change is saved at once
+in `%LOCALAPPDATA%\NJ-Flush\settings.ini`.
 
 | Setting | Default | What it does |
 |---|---|---|
-| Animation | on | off = flush silently in the background |
-| Sound | on | quiet sound effects, at most 10% of full volume |
-| Restart File Explorer on flush | on | frees Explorer's memory; turn off to keep open Explorer windows |
-| Auto-flush at 90% RAM | off | flushes by itself when RAM stays at 90% or more for 30 seconds, at most once every 10 minutes |
-| Start with Windows | off | starts the widget when you sign in |
-
+| Play the flush animation | on | off = flush quietly in the background |
+| Play sound effects | on | the flush sounds, never louder than 10% of full volume |
+| Volume | 100% | of that already quiet level |
+| Preview | | plays Light, Medium, Heavy or Clogged with your current settings |
+| Restart File Explorer on flush | on | frees Explorer's memory; turn off to keep your open folders |
+| Wait between flushes | 60 s | a flush asked for sooner is refused, and the widget counts down |
+| Auto-flush when RAM stays high | off | flushes by itself when RAM stays at the chosen level (70 to 99%) for 30 s, at most once every 10 minutes |
+| Ctrl+Alt+F flushes from anywhere | on | the global shortcut |
+| Brightness when idle | 40% | how visible the widget is when the mouse is not on it |
+| Start the widget with Windows | off | starts the widget when you sign in |
 ## What a flush does, and what it cannot do
 
 - Stops leftover helper processes: a `node.exe` / `cmd.exe` tree whose parent is gone, older than 6 hours, whose command line names a known

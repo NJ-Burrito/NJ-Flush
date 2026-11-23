@@ -45,6 +45,7 @@ static class App {
             Overlay.Solid = args.Any(a => a.ToLowerInvariant() == "solid");
             Overlay.Run(args.Length > 1 ? args[1] : "medium"); return 0;
         }
+        if (mode == "/settings") { Application.EnableVisualStyles(); Application.Run(new SettingsForm(null)); return 0; }  // standalone (no widget)
         if (mode == "/uninstall") return Run("schtasks.exe", "/delete /tn " + TaskName + " /f", null);
         if (mode == "/install") return Install() ? 0 : 1;
         return Launch();
@@ -147,7 +148,8 @@ static class App {
 static class Settings {
     static readonly string File_ = Path.Combine(App.Dir, "settings.ini");
     public static readonly string LastFile = Path.Combine(App.Dir, "last.txt");
-    public static bool Animation = true, Sound = true, RestartExplorer = true, AutoFlush = false;
+    public static bool Animation = true, Sound = true, RestartExplorer = true, AutoFlush = false, Hotkey = true;
+    public static int Volume = 100, IdleOpacity = 40;  // volume: % of the mixed level (itself <= 10% full scale); widget brightness when idle
     public static int AutoAt = 90;  // auto-flush when RAM in use stays at or above this % for 30 s, at most once per 10 min
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
@@ -161,14 +163,18 @@ static class Settings {
                 else if (k == "restartexplorer") RestartExplorer = b; else if (k == "autoflush") AutoFlush = b;
                 else if (k == "autoat" && int.TryParse(v, out n) && n >= 50 && n <= 99) AutoAt = n;
                 else if (k == "cooldown" && int.TryParse(v, out n) && n >= 10 && n <= 600) Cooldown = n;
+                else if (k == "hotkey") Hotkey = b;
+                else if (k == "volume" && int.TryParse(v, out n) && n >= 0 && n <= 100) Volume = n;
+                else if (k == "idleopacity" && int.TryParse(v, out n) && n >= 20 && n <= 100) IdleOpacity = n;
             }
         } catch (Exception) { }  // no file yet: defaults
     }
     public static void Save() {
         try {
             Directory.CreateDirectory(App.Dir);
-            File.WriteAllText(File_, string.Format("animation={0}\r\nsound={1}\r\nrestartexplorer={2}\r\nautoflush={3}\r\nautoat={4}\r\ncooldown={5}\r\n",
-                Animation ? 1 : 0, Sound ? 1 : 0, RestartExplorer ? 1 : 0, AutoFlush ? 1 : 0, AutoAt, Cooldown));
+            File.WriteAllText(File_, string.Format("animation={0}\r\nsound={1}\r\nrestartexplorer={2}\r\nautoflush={3}\r\nautoat={4}\r\ncooldown={5}\r\n" +
+                "hotkey={6}\r\nvolume={7}\r\nidleopacity={8}\r\n",
+                Animation ? 1 : 0, Sound ? 1 : 0, RestartExplorer ? 1 : 0, AutoFlush ? 1 : 0, AutoAt, Cooldown, Hotkey ? 1 : 0, Volume, IdleOpacity));
         } catch (Exception) { }
     }
     public static bool Autostart() {
@@ -334,6 +340,7 @@ static class Mem {
 // Windows "Show animations" off -> no motion, the tier and the result still show (reduced motion keeps the feedback).
 static class Overlay {
     public static bool Solid;  // opaque backdrop: screen recordings never show the desktop behind
+    [DllImport("winmm.dll")] static extern int waveOutSetVolume(IntPtr device, uint volume);  // this process's volume (SoundPlayer)
     const string Xaml = @"
 <Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
         WindowStyle='None' AllowsTransparency='True' Background='Transparent' Topmost='True' ShowInTaskbar='False'
@@ -733,7 +740,10 @@ static class Overlay {
         };
         win.Loaded += delegate {
             clock.Start(); timer.Start();
-            if (sound != null) sound.Play();   // one soundtrack per tier, cued to this clock
+            if (sound != null) {               // one soundtrack per tier, cued to this clock, at the user's volume
+                uint v = (uint)(Settings.Volume * 0xFFFF / 100); waveOutSetVolume(IntPtr.Zero, v | (v << 16));
+                sound.Play();
+            }
             root.BeginAnimation(W.UIElement.OpacityProperty, A(null, 1, motion ? 250 : 1, null));
             if (motion) S2(pop, A(0.6, 1, 450, new WA.BackEase { Amplitude = 0.4, EasingMode = WA.EasingMode.EaseOut }));
             else { pop.ScaleX = 1; pop.ScaleY = 1; }
@@ -752,7 +762,13 @@ class Widget : Form {
     [DllImport("psapi.dll")] static extern bool EmptyWorkingSet(IntPtr p);
     [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int v, int size);
 
-    const double Dim = 0.40, Lit = 0.95;
+    const double Lit = 0.95;
+    static double Dim { get { return Settings.IdleOpacity / 100.0; } }
+    public void ApplySettings() {              // called by the settings window: hotkey and idle brightness change live
+        UnregisterHotKey(Handle, 1);
+        if (Settings.Hotkey) RegisterHotKey(Handle, 1, 0x1 | 0x2 | 0x4000, (uint)Keys.F);
+        if (!ClientRectangle.Contains(PointToClient(Cursor.Position))) Opacity = Dim;
+    }
     Mem.MemStatus m;
     string pctText = "", gbText = "";
     float pct;
@@ -787,18 +803,7 @@ class Widget : Form {
         ((ToolStripMenuItem)menu.Items.Add("Flush now", null, delegate { TryFlush(); })).ShortcutKeyDisplayString = "Ctrl+Alt+F";
         menu.Items.Add("Memory breakdown", null, delegate { MessageBox.Show(Mem.Breakdown(), "NJ-Flush: where the RAM is"); });
         menu.Items.Add(new ToolStripSeparator());
-        var settings = new ToolStripMenuItem("Settings");
-        Action<string, Func<bool>, Action<bool>> toggle = (text, get, set) => {
-            var item = new ToolStripMenuItem(text) { CheckOnClick = true, Checked = get() };
-            item.CheckedChanged += delegate { set(item.Checked); Settings.Save(); };
-            settings.DropDownItems.Add(item);
-        };
-        toggle("Animation", () => Settings.Animation, v => Settings.Animation = v);
-        toggle("Sound", () => Settings.Sound, v => Settings.Sound = v);
-        toggle("Restart File Explorer on flush", () => Settings.RestartExplorer, v => Settings.RestartExplorer = v);
-        toggle("Auto-flush at " + Settings.AutoAt + "% RAM", () => Settings.AutoFlush, v => Settings.AutoFlush = v);
-        toggle("Start with Windows", Settings.Autostart, Settings.SetAutostart);
-        menu.Items.Add(settings);
+        menu.Items.Add("Settings...", null, delegate { SettingsForm.Open(this); });
         var preview = new ToolStripMenuItem("Preview animations");
         foreach (string t in new[] { "light", "medium", "heavy", "clogged" }) {
             string tier = t;
@@ -840,7 +845,7 @@ class Widget : Form {
     protected override void OnHandleCreated(EventArgs e) {
         base.OnHandleCreated(e);
         int round = 2; DwmSetWindowAttribute(Handle, 33, ref round, 4);  // Win11 rounded corners
-        RegisterHotKey(Handle, 1, 0x1 | 0x2 | 0x4000, (uint)Keys.F);       // Ctrl+Alt+F, no auto-repeat; taken by another app = silently off
+        if (Settings.Hotkey) RegisterHotKey(Handle, 1, 0x1 | 0x2 | 0x4000, (uint)Keys.F);  // Ctrl+Alt+F, no auto-repeat; taken by another app = silently off
     }
     protected override void OnHandleDestroyed(EventArgs e) { UnregisterHotKey(Handle, 1); base.OnHandleDestroyed(e); }
 
@@ -902,5 +907,136 @@ class Widget : Form {
         // bar colour = the flush tier it would play: cyan, yellow, orange, red (commit near its limit counts as orange)
         SolidBrush bar = pct >= 0.96f ? red : pct >= 0.9f || commitTight ? hot : pct >= 0.8f ? warm : ok;
         gr.FillRectangle(bar, 8, 27, (int)(w * pct), 3);
+    }
+}
+
+// Settings window (Nader 2026-11-23): right-click the widget > Settings... (or NJ-Flush.exe /settings). Every change is saved and applied at once.
+class SettingsForm : Form {
+    static SettingsForm open;
+    [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int v, int size);
+    static readonly Color Bg = Color.FromArgb(15, 23, 35), Panel_ = Color.FromArgb(28, 39, 53), Fg = Color.FromArgb(230, 237, 243),
+                          Muted = Color.FromArgb(154, 168, 182), Off = Color.FromArgb(85, 96, 108), Accent = Color.FromArgb(34, 211, 238),
+                          Edge = Color.FromArgb(50, 65, 85);
+    const int W = 540;                          // layout in 96-dpi units, scaled by sc (fonts scale by themselves)
+    readonly Widget owner;
+    readonly Font body, head;
+    readonly float sc;
+    int y = 18;
+    bool loading = true;
+
+    public static void Open(Widget w) {
+        if (open != null && !open.IsDisposed) { open.Activate(); return; }
+        open = new SettingsForm(w); open.Show();
+    }
+
+    int S(int v) { return (int)Math.Round(v * sc); }
+    Point P(int x, int yy) { return new Point(S(x), S(yy)); }
+
+    public SettingsForm(Widget w) {
+        owner = w;
+        AutoScaleMode = AutoScaleMode.None;
+        using (var g = CreateGraphics()) sc = g.DpiX / 96f;
+        string face = FontFamily.Families.Any(f => f.Name == "Thmanyah Sans") ? "Thmanyah Sans" : "Segoe UI";
+        body = new Font(face, 10f); head = new Font(face, 11.5f, FontStyle.Bold);
+        Text = "NJ-Flush settings"; Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+        FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false;
+        StartPosition = FormStartPosition.CenterScreen; BackColor = Bg; ForeColor = Fg; Font = body;
+
+        Section("Animation and sound");
+        Check("Play the flush animation", Settings.Animation, v => Settings.Animation = v);
+        Note("Off: the flush runs quietly in the background.");
+        var sound = Check("Play sound effects", Settings.Sound, v => Settings.Sound = v);
+        var vol = Slider("Volume", 0, 100, Settings.Volume, "{0}%", v => Settings.Volume = v);
+        sound.CheckedChanged += delegate { vol.Enabled = sound.Checked; };
+        vol.Enabled = sound.Checked;
+        PreviewRow();
+
+        Section("Flush");
+        Check("Restart File Explorer on flush", Settings.RestartExplorer, v => Settings.RestartExplorer = v);
+        Note("Frees Explorer's memory. Turn off to keep your open folders.");
+        Number("Wait between flushes (seconds)", 10, 600, Settings.Cooldown, v => Settings.Cooldown = v);
+        var auto = Check("Auto-flush when RAM stays high", Settings.AutoFlush, v => Settings.AutoFlush = v);
+        var at = Slider("Auto-flush at", 70, 99, Settings.AutoAt, "{0}% RAM", v => Settings.AutoAt = v);
+        auto.CheckedChanged += delegate { at.Enabled = auto.Checked; };
+        at.Enabled = auto.Checked;
+
+        Section("Widget and shortcuts");
+        Check("Ctrl+Alt+F flushes from anywhere", Settings.Hotkey, v => Settings.Hotkey = v);
+        Slider("Brightness when idle", 20, 100, Settings.IdleOpacity, "{0}%", v => Settings.IdleOpacity = v);
+        Check("Start the widget with Windows", Settings.Autostart(), Settings.SetAutostart, save: false);
+
+        y += 16;
+        var reset = Btn("Reset to defaults", 22, 160, false);
+        reset.Click += delegate {
+            Settings.Animation = Settings.Sound = Settings.RestartExplorer = Settings.Hotkey = true; Settings.AutoFlush = false;
+            Settings.Volume = 100; Settings.AutoAt = 90; Settings.Cooldown = 60; Settings.IdleOpacity = 40;
+            Settings.Save(); if (owner != null) owner.ApplySettings();
+            var again = new SettingsForm(owner) { StartPosition = FormStartPosition.Manual, Location = Location };
+            open = again; again.Show(); Close();
+        };
+        var done = Btn("Done", W - 22 - 120, 120, true);
+        done.Click += delegate { Close(); };
+        AcceptButton = done; CancelButton = done;
+        ClientSize = new Size(S(W), S(y + 54));
+        loading = false;
+    }
+
+    protected override void OnHandleCreated(EventArgs e) {
+        base.OnHandleCreated(e);
+        int dark = 1; DwmSetWindowAttribute(Handle, 20, ref dark, 4);  // dark title bar (Win10 20H1+/Win11)
+    }
+
+    void Changed() { if (loading) return; Settings.Save(); if (owner != null) owner.ApplySettings(); }
+
+    Label Text_(string text, int x, int yy, Color c, Font f = null) {
+        var l = new Label { Text = text, AutoSize = true, Location = P(x, yy), ForeColor = c, BackColor = Bg };
+        if (f != null) l.Font = f;
+        Controls.Add(l); return l;
+    }
+    void Section(string text) { if (y > 20) y += 12; Text_(text, 20, y, Accent, head); y += 32; }
+    void Note(string text) { Text_(text, 44, y - 6, Muted); y += 22; }
+    CheckBox Check(string text, bool value, Action<bool> set, bool save = true) {
+        var c = new CheckBox { Text = text, Checked = value, AutoSize = true, Location = P(22, y), ForeColor = Fg, BackColor = Bg, Cursor = Cursors.Hand };
+        c.CheckedChanged += delegate { set(c.Checked); if (save) Changed(); else if (!loading && owner != null) owner.ApplySettings(); };
+        Controls.Add(c); y += 30;
+        return c;
+    }
+    TrackBar Slider(string text, int min, int max, int value, string fmt, Action<int> set) {
+        var name = Text_(text, 44, y + 4, Fg);
+        var t = new TrackBar { Minimum = min, Maximum = max, Value = Math.Max(min, Math.Min(max, value)), TickStyle = TickStyle.None, AutoSize = false,
+                               Location = P(240, y), Size = new Size(S(190), S(30)), BackColor = Bg, SmallChange = 1, LargeChange = 5 };
+        var v = Text_(string.Format(fmt, t.Value), 440, y + 4, Muted);
+        t.ValueChanged += delegate { set(t.Value); v.Text = string.Format(fmt, t.Value); Changed(); };
+        t.EnabledChanged += delegate { v.ForeColor = t.Enabled ? Muted : Off; name.ForeColor = t.Enabled ? Fg : Off; };
+        Controls.Add(t); y += 36;
+        return t;
+    }
+    void Number(string text, int min, int max, int value, Action<int> set) {
+        Text_(text, 22, y + 3, Fg);
+        var n = new NumericUpDown { Minimum = min, Maximum = max, Value = Math.Max(min, Math.Min(max, value)), Width = S(90), Increment = 10,
+                                    Location = P(340, y), BackColor = Panel_, ForeColor = Fg, BorderStyle = BorderStyle.FixedSingle };
+        n.ValueChanged += delegate { set((int)n.Value); Changed(); };
+        Controls.Add(n); y += 36;
+    }
+    void PreviewRow() {
+        Text_("Preview", 44, y + 5, Fg);
+        int x = 140;
+        foreach (string t in new[] { "Light", "Medium", "Heavy", "Clogged" }) {
+            string tier = t.ToLowerInvariant();
+            var b = Btn(t, x, 88, false); x += 94;
+            b.Click += delegate {
+                Settings.Save();  // the preview process reads the saved animation / sound / volume
+                Process.Start(new ProcessStartInfo(Application.ExecutablePath, "/preview " + tier) { UseShellExecute = false });
+            };
+        }
+        y += 42;
+    }
+    Button Btn(string text, int x, int width, bool primary) {
+        var b = new Button { Text = text, Location = P(x, y), Size = new Size(S(width), S(32)), FlatStyle = FlatStyle.Flat,
+                             BackColor = primary ? Accent : Panel_, ForeColor = primary ? Color.FromArgb(6, 42, 51) : Fg, Cursor = Cursors.Hand };
+        b.FlatAppearance.BorderColor = primary ? Accent : Edge;
+        if (primary) b.Font = new Font(body, FontStyle.Bold);
+        Controls.Add(b);
+        return b;
     }
 }

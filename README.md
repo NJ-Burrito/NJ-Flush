@@ -35,9 +35,10 @@ would play.
 | Action | How |
 |---|---|
 | Flush | double-click the widget, press **Ctrl+Alt+F**, or double-click `NJ-Flush.exe` |
-| See where the RAM is | right-click the widget > **Memory breakdown** |
+| See where the RAM is | right-click the widget > **Memory breakdown**: a bar of apps, kernel, cache, free and the hidden share, with what each means |
 | Last flush, free RAM | hover the widget |
 | Watch an animation without flushing | right-click > **Preview animations**, or `NJ-Flush.exe /preview clogged` |
+| Update | right-click > **Check for updates...**, or Settings > Updates. A newer GitHub release is downloaded, checked against its SHA-256, and swapped in; the widget restarts by itself. `NJ-Flush.exe /update` does it quietly. |
 | Remove it | right-click > **Uninstall NJ-Flush...** |
 
 **Settings**: right-click the widget > **Settings...** (or run `NJ-Flush.exe /settings`). Every change is saved at once
@@ -55,6 +56,7 @@ in `%LOCALAPPDATA%\NJ-Flush\settings.ini`.
 | Ctrl+Alt+F flushes from anywhere | on | the global shortcut |
 | Brightness when idle | 40% | how visible the widget is when the mouse is not on it |
 | Start the widget with Windows | off | starts the widget when you sign in |
+| Check for updates once a day | on | the widget's menu shows «Update to x.y.z...» when a new release is out; nothing installs without you |
 ## What a flush does, and what it cannot do
 
 - Stops leftover helper processes: a `node.exe` / `cmd.exe` tree whose parent is gone, older than 6 hours, whose command line names a known
@@ -65,6 +67,8 @@ in `%LOCALAPPDATA%\NJ-Flush\settings.ini`.
 
 Memory held by drivers, the hypervisor, Memory Integrity (VBS/HVCI) or page tables cannot be flushed. **Memory breakdown**
 shows how much of that there is.
+
+**Font:** the windows use Thmanyah Sans when it is installed on the PC (it is not bundled: its licence does not allow that); otherwise Segoe UI.
 
 ## Build from source
 
@@ -89,7 +93,7 @@ own). To re-mix, download Mixkit items 1830, 1871, 1872, 1889, 1311, 1317, 3000 
 
 ## Technologies
 
-C# 5 on .NET Framework 4 (WPF for the overlay animation, WinForms for the widget), Win32 / NT native calls, Windows Task
+C# 5 on .NET Framework 4 (WPF for the overlay animation and the memory breakdown, WinForms for the widget and settings), Win32 / NT native calls, Windows Task
 Scheduler, Python + ffmpeg for the sound mix, Pillow for the icon, plain HTML/CSS for the site.
 
 ## Licence

@@ -7,6 +7,8 @@
 //   /widget             -> tiny RAM widget above the clock: live "XX%  used/total GB", dim until hovered,
 //                          double-click or Ctrl+Alt+F = flush; right-click = flush, breakdown, settings, previews, uninstall.
 //   /uninstall          -> (elevated) removes the task; the widget menu runs it.
+//   /settings           -> the settings window on its own.   /update -> install the latest release quietly.
+//   /breakdown -> the memory breakdown window on its own.
 // Settings: %LOCALAPPDATA%\NJ-Flush\settings.ini (animation, sound, restart Explorer, auto-flush, start with Windows).
 // Build: csc /target:winexe /win32icon:NJ-Flush.ico /resource:flush-<tier>.wav x4 (+ WPF refs), see build.cmd.
 using System;
@@ -46,6 +48,10 @@ static class App {
             Overlay.Run(args.Length > 1 ? args[1] : "medium"); return 0;
         }
         if (mode == "/settings") { Application.EnableVisualStyles(); Application.Run(new SettingsForm(null)); return 0; }  // standalone (no widget)
+        if (mode == "/update") {  // quiet update: 0 updated, 1 already latest, 2 GitHub unreachable, 3 refused (checksum / file)
+            var u = Updater.Check(); if (u.Error != null) return 2; if (!u.Newer) return 1; return Updater.Apply(u) == null ? 0 : 3;
+        }
+        if (mode == "/breakdown") { BreakdownWindow.Show(FlushNow); return 0; }
         if (mode == "/uninstall") return Run("schtasks.exe", "/delete /tn " + TaskName + " /f", null);
         if (mode == "/install") return Install() ? 0 : 1;
         return Launch();
@@ -148,7 +154,7 @@ static class App {
 static class Settings {
     static readonly string File_ = Path.Combine(App.Dir, "settings.ini");
     public static readonly string LastFile = Path.Combine(App.Dir, "last.txt");
-    public static bool Animation = true, Sound = true, RestartExplorer = true, AutoFlush = false, Hotkey = true;
+    public static bool Animation = true, Sound = true, RestartExplorer = true, AutoFlush = false, Hotkey = true, AutoUpdate = true;
     public static int Volume = 100, IdleOpacity = 40;  // volume: % of the mixed level (itself <= 10% full scale); widget brightness when idle
     public static int AutoAt = 90;  // auto-flush when RAM in use stays at or above this % for 30 s, at most once per 10 min
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
@@ -164,6 +170,7 @@ static class Settings {
                 else if (k == "autoat" && int.TryParse(v, out n) && n >= 50 && n <= 99) AutoAt = n;
                 else if (k == "cooldown" && int.TryParse(v, out n) && n >= 10 && n <= 600) Cooldown = n;
                 else if (k == "hotkey") Hotkey = b;
+                else if (k == "autoupdate") AutoUpdate = b;
                 else if (k == "volume" && int.TryParse(v, out n) && n >= 0 && n <= 100) Volume = n;
                 else if (k == "idleopacity" && int.TryParse(v, out n) && n >= 20 && n <= 100) IdleOpacity = n;
             }
@@ -173,8 +180,8 @@ static class Settings {
         try {
             Directory.CreateDirectory(App.Dir);
             File.WriteAllText(File_, string.Format("animation={0}\r\nsound={1}\r\nrestartexplorer={2}\r\nautoflush={3}\r\nautoat={4}\r\ncooldown={5}\r\n" +
-                "hotkey={6}\r\nvolume={7}\r\nidleopacity={8}\r\n",
-                Animation ? 1 : 0, Sound ? 1 : 0, RestartExplorer ? 1 : 0, AutoFlush ? 1 : 0, AutoAt, Cooldown, Hotkey ? 1 : 0, Volume, IdleOpacity));
+                "hotkey={6}\r\nvolume={7}\r\nidleopacity={8}\r\nautoupdate={9}\r\n",
+                Animation ? 1 : 0, Sound ? 1 : 0, RestartExplorer ? 1 : 0, AutoFlush ? 1 : 0, AutoAt, Cooldown, Hotkey ? 1 : 0, Volume, IdleOpacity, AutoUpdate ? 1 : 0));
         } catch (Exception) { }
     }
     public static bool Autostart() {
@@ -238,6 +245,12 @@ static class Orphans {
     }
 }
 
+class MemInfo {
+    public double Total, InUse, Apps, Kernel, Modified, Hidden, Standby, Free, CommitUsed, CommitLimit;
+    public bool Lists, Hvci;
+    public int Procs, Node, Cmd, Conhost, Leftovers;
+}
+
 static class Mem {
     [DllImport("ntdll.dll")] static extern int RtlAdjustPrivilege(int p, bool enable, bool thread, out bool was);
     [DllImport("ntdll.dll")] static extern int NtSetSystemInformation(int cls, ref int info, int len);
@@ -284,51 +297,33 @@ static class Mem {
         if (Process.GetProcessesByName("explorer").Length == 0) Process.Start("explorer.exe");
     }
 
-    // RAMMap-style summary from the kernel's own page lists (locale-independent, no extra tools)
-    public static string Breakdown() {
+    // RAMMap-style snapshot from the kernel's own page lists (locale-independent, no extra tools); shown by BreakdownWindow
+    public static MemInfo Snapshot() {
         var m = new MemStatus(); Status(ref m);
-        double total = m.total / GB, inUse = (m.total - m.avail) / GB;
+        var r = new MemInfo { Total = m.total / GB, InUse = (m.total - m.avail) / GB };
         double page = Environment.SystemPageSize;
         Privileges();
         var buf = new IntPtr[22]; int ret;
-        bool lists = NtQuerySystemInformation(80, buf, buf.Length * IntPtr.Size, out ret) == 0;
+        r.Lists = NtQuerySystemInformation(80, buf, buf.Length * IntPtr.Size, out ret) == 0;
         Func<int, int, double> pages = (from, count) => { double s = 0; for (int i = from; i < from + count; i++) s += buf[i].ToInt64(); return s * page / GB; };
-        double free = lists ? pages(0, 2) : 0, modified = lists ? pages(2, 2) : 0, standby = lists ? pages(5, 8) : 0;
-        double apps = 0;
-        foreach (var p in Process.GetProcesses()) try { apps += p.WorkingSet64 / GB; } catch (Exception) { }
-        PerfInfo pi; double kernel = 0;
-        if (GetPerformanceInfo(out pi, Marshal.SizeOf(typeof(PerfInfo))))
-            kernel = (pi.kPaged.ToInt64() + pi.kNonpaged.ToInt64()) * (double)pi.pageSize.ToInt64() / GB;
-        double hidden = Math.Max(0, inUse - apps - kernel - modified);
-        var sb = new StringBuilder();
-        sb.AppendFormat("In use            {0,6:0.00} GB of {1:0.00} GB\n\n", inUse, total);
-        sb.AppendFormat("Apps              {0,6:0.00} GB\n", apps);
-        sb.AppendFormat("Kernel pools      {0,6:0.00} GB\n", kernel);
-        sb.AppendFormat("Modified (to disk){0,6:0.00} GB\n", modified);
-        sb.AppendFormat("Hidden            {0,6:0.00} GB   drivers, hypervisor / VBS, page tables\n\n", hidden);
-        if (lists) {
-            sb.AppendFormat("Cache (standby)   {0,6:0.00} GB   free to reuse\n", standby);
-            sb.AppendFormat("Free              {0,6:0.00} GB\n", free);
-        } else sb.Append("(Page lists need admin: run a flush first.)\n");
-        // 2026-11-23: reserved (commit) memory, process counts, leftovers, Memory Integrity: what RAMMap showed behind the "fake" RAM
-        double commitUsed = (m.tPage - m.aPage) / GB, commitLimit = m.tPage / GB;
+        if (r.Lists) { r.Free = pages(0, 2); r.Modified = pages(2, 2); r.Standby = pages(5, 8); }
         var procs = Process.GetProcesses();
+        foreach (var p in procs) try { r.Apps += p.WorkingSet64 / GB; } catch (Exception) { }
+        r.Apps = Math.Min(r.Apps, r.InUse);  // working sets share pages: never show more than is in use
+        PerfInfo pi;
+        if (GetPerformanceInfo(out pi, Marshal.SizeOf(typeof(PerfInfo))))
+            r.Kernel = (pi.kPaged.ToInt64() + pi.kNonpaged.ToInt64()) * (double)pi.pageSize.ToInt64() / GB;
+        r.Hidden = Math.Max(0, r.InUse - r.Apps - r.Kernel - r.Modified);
+        // 2026-11-23: reserved (commit) memory, process counts, leftovers, Memory Integrity: what RAMMap showed behind the "fake" RAM
+        r.CommitUsed = (m.tPage - m.aPage) / GB; r.CommitLimit = m.tPage / GB;
         Func<string, int> nOf = n => procs.Count(p => string.Equals(p.ProcessName, n, StringComparison.OrdinalIgnoreCase));
-        int left = 0; try { left = Orphans.Find().Count; } catch (Exception) { }
-        bool hvci = false;
+        r.Procs = procs.Length; r.Node = nOf("node"); r.Cmd = nOf("cmd"); r.Conhost = nOf("conhost");
+        try { r.Leftovers = Orphans.Find().Count; } catch (Exception) { }
         try {
             using (var k = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity"))
-                hvci = k != null && Convert.ToInt32(k.GetValue("Enabled", 0)) == 1;
+                r.Hvci = k != null && Convert.ToInt32(k.GetValue("Enabled", 0)) == 1;
         } catch (Exception) { }
-        sb.AppendFormat("\nReserved (commit) {0,6:0.00} GB of {1:0.00} GB{2}\n", commitUsed, commitLimit, commitUsed / commitLimit >= 0.9 ? "   NEAR THE LIMIT" : "");
-        sb.AppendFormat("Processes         {0,6}   node {1} / cmd {2} / conhost {3}\n", procs.Length, nOf("node"), nOf("cmd"), nOf("conhost"));
-        sb.AppendFormat("Leftover helpers  {0,6}   {1}\n", left, left > 0 ? "a flush stops them" : "none");
-        sb.AppendFormat("Memory Integrity  {0,6}   {1}\n", hvci ? "on" : "off", hvci ? "holds memory no tool attributes (part of Hidden)" : "");
-        if (nOf("node") > 30) sb.Append("\nMany node processes: each VS Code window and Claude session starts its own helpers; close the ones you do not use.\n");
-        if (hidden > total * 0.25)
-            sb.Append("\nA large Hidden share is memory no flush can reach. Restarting Windows clears it;\n" +
-                      "turning off Memory Integrity frees part of it (lowers security).");
-        return sb.ToString();
+        return r;
     }
 }
 
@@ -801,7 +796,7 @@ class Widget : Form {
 
         var menu = new ContextMenuStrip();
         ((ToolStripMenuItem)menu.Items.Add("Flush now", null, delegate { TryFlush(); })).ShortcutKeyDisplayString = "Ctrl+Alt+F";
-        menu.Items.Add("Memory breakdown", null, delegate { MessageBox.Show(Mem.Breakdown(), "NJ-Flush: where the RAM is"); });
+        menu.Items.Add("Memory breakdown", null, delegate { BreakdownWindow.Show(TryFlush); });
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Settings...", null, delegate { SettingsForm.Open(this); });
         var preview = new ToolStripMenuItem("Preview animations");
@@ -813,6 +808,7 @@ class Widget : Form {
         }
         menu.Items.Add(preview);
         menu.Items.Add(new ToolStripSeparator());
+        updateItem = (ToolStripMenuItem)menu.Items.Add("Check for updates...", null, delegate { Updater.Interactive(this); });
         menu.Items.Add("Uninstall NJ-Flush...", null, delegate {
             if (MessageBox.Show("Remove NJ-Flush from this PC?\n\nThe task, the autostart entry, the settings and the installed copy are removed.",
                                 "NJ-Flush", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK) { App.Uninstall(); Close(); }
@@ -822,11 +818,15 @@ class Widget : Form {
         tip = new ToolTip { InitialDelay = 400 };
         MouseEnter += delegate {
             Opacity = Lit;
-            tip.SetToolTip(this, string.Format("Free {0:0.00} GB\nLast flush: {1}\nDouble-click or Ctrl+Alt+F to flush", m.avail / 1073741824.0, Settings.Last()));
+            tip.SetToolTip(this, string.Format("Free {0:0.00} GB\nLast flush: {1}\nDouble-click or Ctrl+Alt+F to flush{2}", m.avail / 1073741824.0, Settings.Last(), updateNote));
         };
         MouseLeave += delegate { Opacity = Dim; };
         DoubleClick += delegate { TryFlush(); };
 
+        try { File.Delete(App.Exe + ".old"); } catch (Exception) { }   // left by the last update
+        var upd = new System.Windows.Forms.Timer { Interval = 15000 };    // first check 15 s after start, then every 24 h
+        upd.Tick += delegate { upd.Interval = 24 * 3600 * 1000; if (Settings.AutoUpdate) CheckInBackground(); };
+        upd.Start();
         var timer = new System.Windows.Forms.Timer { Interval = 1000 };
         timer.Tick += delegate { Sample(); };
         timer.Start();
@@ -874,6 +874,17 @@ class Widget : Form {
     }
 
     ToolTip tip;
+    ToolStripMenuItem updateItem;
+    string updateNote = "";
+    void CheckInBackground() {
+        new Thread(() => {
+            var i = Updater.Check();
+            if (i.Error == null && i.Newer) BeginInvoke((Action)delegate {
+                updateItem.Text = "Update to " + i.Tag.TrimStart('v') + "..."; updateItem.Font = new Font(updateItem.Font, FontStyle.Bold);
+                updateNote = "\nUpdate " + i.Tag.TrimStart('v') + " is available (right-click)";
+            });
+        }) { IsBackground = true }.Start();
+    }
     // during the cooldown a flush request explains itself instead of doing nothing silently
     void TryFlush() {
         int left = Settings.CooldownLeft();
@@ -965,11 +976,18 @@ class SettingsForm : Form {
         Slider("Brightness when idle", 20, 100, Settings.IdleOpacity, "{0}%", v => Settings.IdleOpacity = v);
         Check("Start the widget with Windows", Settings.Autostart(), Settings.SetAutostart, save: false);
 
+        Section("Updates");
+        Check("Check for updates once a day", Settings.AutoUpdate, v => Settings.AutoUpdate = v);
+        Text_("You have version " + Updater.Version, 22, y + 6, Muted);
+        var chk = Btn("Check for updates", W - 22 - 180, 180, false);
+        chk.Click += delegate { Updater.Interactive(this); };
+        y += 40;
+
         y += 16;
         var reset = Btn("Reset to defaults", 22, 160, false);
         reset.Click += delegate {
             Settings.Animation = Settings.Sound = Settings.RestartExplorer = Settings.Hotkey = true; Settings.AutoFlush = false;
-            Settings.Volume = 100; Settings.AutoAt = 90; Settings.Cooldown = 60; Settings.IdleOpacity = 40;
+            Settings.Volume = 100; Settings.AutoAt = 90; Settings.Cooldown = 60; Settings.IdleOpacity = 40; Settings.AutoUpdate = true;
             Settings.Save(); if (owner != null) owner.ApplySettings();
             var again = new SettingsForm(owner) { StartPosition = FormStartPosition.Manual, Location = Location };
             open = again; again.Show(); Close();
@@ -1038,5 +1056,209 @@ class SettingsForm : Form {
         if (primary) b.Font = new Font(body, FontStyle.Bold);
         Controls.Add(b);
         return b;
+    }
+}
+
+// NJ-Font (Thmanyah Sans) when this machine has it: installed, or the NJ-Font folder on the Desktop. Never shipped inside the exe
+// (the font licence forbids redistributing the files); elsewhere Segoe UI.
+static class NjFont {
+    static WM.FontFamily cached;
+    public static WM.FontFamily Wpf() {
+        if (cached != null) return cached;
+        if (WM.Fonts.SystemFontFamilies.Any(f => string.Equals(f.Source, "Thmanyah Sans", StringComparison.OrdinalIgnoreCase)))
+            return cached = new WM.FontFamily("Thmanyah Sans");
+        string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"Desktop\NJ-Font\thmanyah\thmanyahsans\otf\");
+        if (Directory.Exists(dir)) return cached = new WM.FontFamily(new Uri(dir), "./#Thmanyah Sans");
+        return cached = new WM.FontFamily("Segoe UI");
+    }
+}
+
+// Memory breakdown (Nader 2026-11-23: "beautify it"): one stacked bar of where the RAM is, a legend that says what each part means,
+// the system facts behind "hidden" RAM, and Refresh / Flush now. WPF, so the NJ-Font renders.
+static class BreakdownWindow {
+    [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int v, int size);
+    static WM.SolidColorBrush B(string hex) { return new WM.SolidColorBrush((WM.Color)WM.ColorConverter.ConvertFromString(hex)); }
+    static readonly WM.Brush Bg = B("#0F1723"), Card = B("#162130"), Fg = B("#E6EDF3"), Muted = B("#9AA8B6"), Line = B("#243246"), Accent = B("#22D3EE");
+
+    public static void Show(Action flush) {
+        var win = new W.Window {
+            Title = "NJ-Flush: where your RAM is", Width = 600, SizeToContent = W.SizeToContent.Height, ResizeMode = W.ResizeMode.NoResize,
+            WindowStartupLocation = W.WindowStartupLocation.CenterScreen, Background = Bg, Foreground = Fg, FontFamily = NjFont.Wpf(), FontSize = 14
+        };
+        try { win.Icon = WM.Imaging.BitmapFrame.Create(new Uri(Assembly.GetExecutingAssembly().Location)); } catch (Exception) { }
+        win.SourceInitialized += delegate { int dark = 1; DwmSetWindowAttribute(new W.Interop.WindowInteropHelper(win).Handle, 20, ref dark, 4); };
+        Action fill = null;
+        fill = () => {
+            var root = new System.Windows.Controls.StackPanel { Margin = new W.Thickness(28, 24, 28, 24) };
+            Build(root, Mem.Snapshot(), () => fill(), () => { win.Close(); flush(); }, () => win.Close());
+            win.Content = root;
+        };
+        win.Cursor = W.Input.Cursors.Wait; fill(); win.Cursor = null;
+        win.KeyDown += (s, e) => { if (e.Key == W.Input.Key.Escape) win.Close(); };
+        win.ShowDialog();
+    }
+
+    static System.Windows.Controls.TextBlock T(string text, double size, WM.Brush color, bool bold = false) {
+        return new System.Windows.Controls.TextBlock { Text = text, FontSize = size, Foreground = color, FontWeight = bold ? W.FontWeights.Bold : W.FontWeights.Normal,
+                                                       TextWrapping = W.TextWrapping.Wrap };
+    }
+
+    static void Build(System.Windows.Controls.StackPanel root, MemInfo m, Action refresh, Action flush, Action close) {
+        double pct = m.InUse / m.Total * 100;
+        string[] tierCol = { "#22D3EE", "#FACC15", "#FB923C", "#F87171" };
+        var head = new System.Windows.Controls.DockPanel();
+        var big = T(string.Format("{0:0}%", pct), 40, B(tierCol[Overlay.TierOf(pct)]), true); big.Margin = new W.Thickness(0, -6, 0, 0);
+        System.Windows.Controls.DockPanel.SetDock(big, System.Windows.Controls.Dock.Right); head.Children.Add(big);
+        var titles = new System.Windows.Controls.StackPanel();
+        titles.Children.Add(T("Where your RAM is", 22, Fg, true));
+        titles.Children.Add(T(string.Format("{0:0.00} GB in use of {1:0.00} GB", m.InUse, m.Total), 14, Muted));
+        head.Children.Add(titles); root.Children.Add(head);
+
+        // the stacked bar: every part of physical memory, in order
+        var parts = new[] {
+            Tuple.Create("Apps", m.Apps, "#22D3EE", "Programs you are running"),
+            Tuple.Create("Kernel", m.Kernel, "#2DD4BF", "Windows' own memory pools"),
+            Tuple.Create("Waiting to be written", m.Modified, "#FACC15", "Changed pages on their way to disk; a flush writes them"),
+            Tuple.Create("Hidden", m.Hidden, "#FB923C", "Drivers, hypervisor, Memory Integrity, page tables; no flush reaches it"),
+            Tuple.Create("Cache", m.Standby, "#64748B", "Recently used files, handed back the moment an app needs it"),
+            Tuple.Create("Free", m.Free, "#1F2D3D", "Not used at all")
+        };
+        var bar = new System.Windows.Controls.Grid { Height = 22, Margin = new W.Thickness(0, 20, 0, 18) };
+        bar.Clip = new WM.RectangleGeometry(new W.Rect(0, 0, 544, 22), 11, 11);
+        int col = 0;
+        foreach (var p in parts) {
+            if (p.Item2 <= 0.005) continue;
+            bar.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new W.GridLength(p.Item2, W.GridUnitType.Star) });
+            var seg = new System.Windows.Shapes.Rectangle { Fill = B(p.Item3), Margin = new W.Thickness(0, 0, 2, 0), ToolTip = string.Format("{0}: {1:0.00} GB", p.Item1, p.Item2) };
+            System.Windows.Controls.Grid.SetColumn(seg, col++); bar.Children.Add(seg);
+        }
+        root.Children.Add(bar);
+
+        // legend: two columns, each part with its size and one line of meaning
+        var legend = new System.Windows.Controls.Primitives.UniformGrid { Columns = 2 };
+        foreach (var p in parts) {
+            if (!m.Lists && (p.Item1 == "Cache" || p.Item1 == "Free" || p.Item1 == "Waiting to be written")) continue;
+            var cell = new System.Windows.Controls.DockPanel { Margin = new W.Thickness(0, 0, 18, 14) };
+            var dot = new System.Windows.Shapes.Ellipse { Width = 10, Height = 10, Fill = B(p.Item3), Margin = new W.Thickness(0, 6, 10, 0), VerticalAlignment = W.VerticalAlignment.Top };
+            if (p.Item1 == "Free") { dot.Stroke = Muted; dot.StrokeThickness = 1; }
+            System.Windows.Controls.DockPanel.SetDock(dot, System.Windows.Controls.Dock.Left); cell.Children.Add(dot);
+            var txt = new System.Windows.Controls.StackPanel();
+            var row = new System.Windows.Controls.DockPanel();
+            var gb = T(string.Format("{0:0.00} GB", p.Item2), 14, Fg, true); System.Windows.Controls.DockPanel.SetDock(gb, System.Windows.Controls.Dock.Right);
+            row.Children.Add(gb); row.Children.Add(T(p.Item1, 14, Fg));
+            txt.Children.Add(row); txt.Children.Add(T(p.Item4, 12, Muted));
+            cell.Children.Add(txt); legend.Children.Add(cell);
+        }
+        root.Children.Add(legend);
+        if (!m.Lists) root.Children.Add(T("Cache and free memory need admin rights to read. They show after a flush has run once.", 12, Muted));
+
+        // system facts on a card
+        var card = new System.Windows.Controls.Border { Background = Card, CornerRadius = new W.CornerRadius(12), Padding = new W.Thickness(18, 14, 18, 6), Margin = new W.Thickness(0, 10, 0, 0) };
+        var facts = new System.Windows.Controls.StackPanel(); card.Child = facts;
+        double commit = m.CommitLimit > 0 ? m.CommitUsed / m.CommitLimit : 0;
+        Action<string, string, WM.Brush, string> fact = (name, value, vcol, note) => {
+            var r = new System.Windows.Controls.DockPanel { Margin = new W.Thickness(0, 0, 0, 10) };
+            var v = T(value, 14, vcol, true); System.Windows.Controls.DockPanel.SetDock(v, System.Windows.Controls.Dock.Right); r.Children.Add(v);
+            var s = new System.Windows.Controls.StackPanel(); s.Children.Add(T(name, 14, Fg));
+            if (!string.IsNullOrEmpty(note)) s.Children.Add(T(note, 12, Muted));
+            r.Children.Add(s); facts.Children.Add(r);
+        };
+        fact("Reserved memory", string.Format("{0:0.0} of {1:0.0} GB", m.CommitUsed, m.CommitLimit), commit >= 0.9 ? B("#F87171") : Fg,
+             commit >= 0.9 ? "Near the limit: apps may fail to start. Close some, or flush." : "What apps have asked Windows to set aside");
+        fact("Processes", m.Procs.ToString(), Fg, string.Format("node {0}   cmd {1}   conhost {2}", m.Node, m.Cmd, m.Conhost));
+        fact("Leftover helpers", m.Leftovers.ToString(), m.Leftovers > 0 ? B("#FB923C") : Fg,
+             m.Leftovers > 0 ? "Helper processes from closed sessions. A flush stops them." : "None found");
+        fact("Memory Integrity", m.Hvci ? "On" : "Off", Fg, m.Hvci ? "Holds memory no tool can see. It is part of Hidden." : "");
+        root.Children.Add(card);
+
+        // tips, only when they apply
+        var tips = new System.Collections.Generic.List<string>();
+        if (m.Node > 30) tips.Add("Many node processes are running. Each VS Code window and Claude session starts its own helpers; close the ones you do not use.");
+        if (m.Hidden > m.Total * 0.25) tips.Add("A large Hidden share is memory no flush can reach. Restarting Windows clears it; turning off Memory Integrity frees part of it, at some cost to security.");
+        foreach (string tip in tips) {
+            var tb = new System.Windows.Controls.Border { BorderBrush = B("#FB923C"), BorderThickness = new W.Thickness(3, 0, 0, 0), Padding = new W.Thickness(12, 4, 4, 4), Margin = new W.Thickness(0, 14, 0, 0) };
+            tb.Child = T(tip, 13, Fg); root.Children.Add(tb);
+        }
+
+        // actions
+        var btns = new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, HorizontalAlignment = W.HorizontalAlignment.Right, Margin = new W.Thickness(0, 22, 0, 0) };
+        Func<string, bool, Action, System.Windows.Controls.Button> btn = (text, primary, act) => {
+            var b = new System.Windows.Controls.Button { Content = text, Padding = new W.Thickness(18, 8, 18, 8), Margin = new W.Thickness(10, 0, 0, 0), Cursor = W.Input.Cursors.Hand,
+                                                         Background = primary ? Accent : Card, Foreground = primary ? B("#062A33") : Fg, BorderBrush = primary ? Accent : Line,
+                                                         FontWeight = primary ? W.FontWeights.Bold : W.FontWeights.Normal, FontSize = 14 };
+            b.Click += delegate { act(); }; btns.Children.Add(b); return b;
+        };
+        btn("Refresh", false, refresh);
+        btn("Close", false, close);
+        var f = btn("Flush now", true, flush);
+        int left = Settings.CooldownLeft();
+        if (left > 0) { f.IsEnabled = false; f.Content = string.Format("Flush in {0} s", left); }
+        root.Children.Add(btns);
+    }
+}
+
+// Updates (Nader 2026-11-23, "like my other tools"): reads the latest GitHub release, compares it with this version, and on request
+// downloads NJ-Flush.exe over HTTPS, checks its SHA-256 against the digest GitHub publishes, swaps it in and restarts the widget.
+static class Updater {
+    public const string Version = "1.2.0", Repo = "NJ-Burrito/NJ-Flush";
+    public class Info { public string Tag, Url, Sha, Error; public bool Newer; }
+
+    static string Get(string url) {
+        System.Net.ServicePointManager.SecurityProtocol |= (System.Net.SecurityProtocolType)3072;  // TLS 1.2 on .NET 4
+        var req = (System.Net.HttpWebRequest)System.Net.WebRequest.Create(url);
+        req.UserAgent = "NJ-Flush/" + Version; req.Accept = "application/vnd.github+json"; req.Timeout = 10000;
+        using (var r = new StreamReader(req.GetResponse().GetResponseStream())) return r.ReadToEnd();
+    }
+
+    public static Info Check() {
+        var i = new Info();
+        try {
+            string json = Get("https://api.github.com/repos/" + Repo + "/releases/latest");
+            var tag = System.Text.RegularExpressions.Regex.Match(json, "\"tag_name\"\\s*:\\s*\"([^\"]+)\"");
+            var asset = System.Text.RegularExpressions.Regex.Match(json, "\"name\"\\s*:\\s*\"NJ-Flush\\.exe\"[\\s\\S]*?\"browser_download_url\"\\s*:\\s*\"([^\"]+)\"");
+            if (!tag.Success || !asset.Success) { i.Error = "The latest release has no NJ-Flush.exe."; return i; }
+            i.Tag = tag.Groups[1].Value; i.Url = asset.Groups[1].Value;
+            var sha = System.Text.RegularExpressions.Regex.Match(asset.Value, "\"digest\"\\s*:\\s*\"sha256:([0-9a-fA-F]{64})\"");
+            if (sha.Success) i.Sha = sha.Groups[1].Value.ToLowerInvariant();
+            i.Newer = new Version(i.Tag.TrimStart('v', 'V')) > new Version(Version);
+        } catch (Exception e) { i.Error = "Could not reach GitHub (" + e.Message + ")."; }
+        return i;
+    }
+
+    // returns null when the new version is in place and the widget restart is queued; otherwise the reason it stopped
+    public static string Apply(Info i) {
+        if (i == null || !i.Newer || i.Url == null) return "No newer version to install.";
+        if (i.Sha == null) return "GitHub did not publish a checksum for this file, so it was not installed.";
+        string tmp = App.Exe + ".new";
+        try {
+            Directory.CreateDirectory(App.Dir);
+            System.Net.ServicePointManager.SecurityProtocol |= (System.Net.SecurityProtocolType)3072;
+            using (var wc = new System.Net.WebClient()) { wc.Headers.Add("User-Agent", "NJ-Flush/" + Version); wc.DownloadFile(i.Url, tmp); }
+            byte[] data = File.ReadAllBytes(tmp);
+            string got;
+            using (var h = System.Security.Cryptography.SHA256.Create()) got = BitConverter.ToString(h.ComputeHash(data)).Replace("-", "").ToLowerInvariant();
+            if (got != i.Sha || data.Length < 2 || data[0] != 'M' || data[1] != 'Z') { File.Delete(tmp); return "The download did not match its checksum, so it was not installed."; }
+            string old = App.Exe + ".old";
+            try { File.Delete(old); } catch (Exception) { }
+            if (File.Exists(App.Exe)) File.Move(App.Exe, old);  // a running exe can be renamed, not overwritten
+            File.Move(tmp, App.Exe);
+        } catch (Exception e) { try { File.Delete(tmp); } catch (Exception) { } return "Update failed: " + e.Message; }
+        foreach (var p in Process.GetProcessesByName("NJ-Flush"))   // the old widget holds the one-widget lock: stop it (the caller exits itself)
+            if (p.Id != Process.GetCurrentProcess().Id) try { p.Kill(); } catch (Exception) { }
+        Process.Start(new ProcessStartInfo("cmd.exe", "/c ping -n 3 127.0.0.1 >nul & start \"\" \"" + App.Exe + "\" /widget") { CreateNoWindow = true, UseShellExecute = false });
+        return null;
+    }
+
+    // the menu / settings action: check, ask, install; exits the caller's app when the swap is done
+    public static void Interactive(IWin32Window owner) {
+        Info i = null;
+        Cursor.Current = Cursors.WaitCursor; i = Check(); Cursor.Current = Cursors.Default;
+        if (i.Error != null) { MessageBox.Show(owner, i.Error, "NJ-Flush updates", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+        if (!i.Newer) { MessageBox.Show(owner, "You have the latest version (" + Version + ").", "NJ-Flush updates", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+        if (MessageBox.Show(owner, string.Format("NJ-Flush {0} is available (you have {1}).\n\nUpdate now? The widget restarts by itself.", i.Tag.TrimStart('v'), Version),
+                            "NJ-Flush updates", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+        string err = Apply(i);
+        if (err != null) { MessageBox.Show(owner, err, "NJ-Flush updates", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+        Application.Exit();
     }
 }

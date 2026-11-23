@@ -1,0 +1,10 @@
+dist/
+obj/
+bin/
+*.old
+*.old2
+# raw Mixkit recordings: the licence does not allow redistributing them on their own (make_sfx.py lists the ids)
+sfx/*.wav
+# session notes, machine-specific
+handoff.md
+

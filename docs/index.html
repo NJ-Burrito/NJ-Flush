@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NJ-Flush</title>
+<meta name="description" content="Free Windows RAM with one double-click. A toilet flushes on screen, harder the fuller your RAM is.">
+<meta property="og:title" content="NJ-Flush">
+<meta property="og:description" content="Free Windows RAM with one double-click, and watch it flush.">
+<meta property="og:image" content="logo-1024.png">
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<style>
+  /* Design read: landing for Windows power users, dark-tech with porcelain + cyan from the app's own art.
+     Dials 7 / 5 / 3. Font: Thmanyah Sans when installed (never web-served: licence), else the system UI face. */
+  :root {
+    --bg: #0a0f17; --bg-2: #0f1723; --line: #1c2735; --text: #e6edf3; --muted: #9aa8b6;
+    --accent: #22d3ee; --accent-ink: #062a33; --porcelain: #f1f5f9;
+    --t1: #22d3ee; --t2: #facc15; --t3: #fb923c; --t4: #f87171;
+    --r: 14px; --ease: cubic-bezier(.16, 1, .3, 1);
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f4f7fa; --bg-2: #ffffff; --line: #dbe3ea; --text: #0d1620; --muted: #4c5b69; --accent: #0e7490; --accent-ink: #ffffff; }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.6 "Thmanyah Sans", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+
+  nav { height: 68px; display: flex; align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; letter-spacing: -.01em; }
+  .brand img { width: 32px; height: 32px; }
+  .nav-links { display: flex; gap: 22px; align-items: center; font-size: 15px; color: var(--muted); }
+  .nav-links a { text-decoration: none; transition: color .2s; }
+  .nav-links a:hover { color: var(--text); }
+
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 999px; font-weight: 600; text-decoration: none;
+         white-space: nowrap; transition: transform .2s var(--ease), background-color .2s; }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { transform: translateY(-1px); }
+  .btn-ghost { border: 1px solid var(--line); }
+  .btn-ghost:hover { background: var(--bg-2); }
+  .btn i { font-size: 18px; }
+
+  .hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; padding: 56px 0 72px; min-height: calc(100dvh - 68px); }
+  h1 { font-size: clamp(40px, 5.4vw, 64px); line-height: 1.04; letter-spacing: -.035em; font-weight: 800; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lede { color: var(--muted); font-size: 19px; max-width: 34ch; margin: 22px 0 32px; }
+  .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+  .stage { position: relative; aspect-ratio: 1; border-radius: 28px; overflow: hidden; background: #0b111a;
+           box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .7), inset 0 0 0 1px rgba(255, 255, 255, .06); }
+  .stage video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  section { padding: 96px 0; }
+  h2 { font-size: clamp(30px, 3.6vw, 44px); line-height: 1.1; letter-spacing: -.025em; font-weight: 800; max-width: 20ch; }
+  .sub { color: var(--muted); max-width: 60ch; margin-top: 14px; font-size: 18px; }
+
+  /* tiers: one RAM gauge, the four flushes hang off it */
+  .gauge { margin-top: 56px; }
+  .bar { height: 14px; border-radius: 999px; display: grid; grid-template-columns: 80fr 10fr 6fr 4fr; overflow: hidden; gap: 3px; }
+  .bar span:nth-child(1) { background: var(--t1); } .bar span:nth-child(2) { background: var(--t2); }
+  .bar span:nth-child(3) { background: var(--t3); } .bar span:nth-child(4) { background: var(--t4); }
+  .scale { display: grid; grid-template-columns: 80fr 10fr 6fr 4fr; font-size: 13px; color: var(--muted); margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .tiers { display: grid; grid-template-columns: 1.15fr 1fr; gap: 40px; margin-top: 48px; align-items: start; }
+  .tier-list { display: grid; gap: 26px; }
+  .tier { display: grid; grid-template-columns: 12px 1fr; gap: 16px; }
+  .tier::before { content: ""; width: 12px; border-radius: 6px; background: var(--c); }
+  .tier h3 { font-size: 20px; letter-spacing: -.01em; }
+  .tier p { color: var(--muted); }
+  .tier .range { font-size: 14px; color: var(--c); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tiers figure img { width: 100%; border-radius: var(--r); display: block; }
+  .tiers figcaption { color: var(--muted); font-size: 14px; margin-top: 10px; }
+
+  /* features bento: 6 items, 6 cells */
+  .bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-top: 48px; }
+  .cell { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; display: flex; flex-direction: column; gap: 10px; min-height: 190px; }
+  .cell i { font-size: 28px; color: var(--accent); }
+  .cell h3 { font-size: 19px; letter-spacing: -.01em; }
+  .cell p { color: var(--muted); font-size: 15px; }
+  .c-a { grid-column: span 4; background: linear-gradient(135deg, #0b3b52, #0e7490 60%, #155e75); border: 0; color: #f0fdff; }
+  .c-a p, .c-a i { color: #cdeff6; }
+  .c-b { grid-column: span 2; } .c-c { grid-column: span 2; } .c-d { grid-column: span 2; } .c-e { grid-column: span 2; }
+  .c-f { grid-column: span 6; flex-direction: row; align-items: center; justify-content: space-between; gap: 24px;
+         background: radial-gradient(120% 140% at 100% 0, rgba(248, 113, 113, .14), transparent 60%), var(--bg-2); }
+  kbd { font: 600 13px ui-monospace, "Cascadia Mono", Consolas, monospace; padding: 2px 7px; border-radius: 6px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); }
+
+  /* a working replica of the widget */
+  .widget { width: 210px; padding: 9px 12px 10px; border-radius: 9px; background: #111827; color: #fff; font-variant-numeric: tabular-nums;
+            box-shadow: 0 10px 30px rgba(0,0,0,.35); flex: none; }
+  .widget .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .widget b { font-size: 17px; } .widget small { font-size: 12px; opacity: .85; }
+  .widget .track { height: 4px; background: #374151; border-radius: 2px; margin-top: 7px; overflow: hidden; }
+  .widget .fill { height: 100%; border-radius: 2px; transition: width .6s var(--ease), background-color .6s; }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 48px; border-top: 1px solid var(--line); }
+  .step { padding: 28px 28px 0 0; }
+  .step h3 { font-size: 20px; display: flex; gap: 10px; align-items: center; }
+  .step h3 i { color: var(--accent); }
+  .step p { color: var(--muted); margin-top: 8px; }
+  .note { margin-top: 40px; color: var(--muted); font-size: 15px; max-width: 70ch; }
+
+  footer { border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } .widget .fill { transition: none; } }
+
+  @media (max-width: 860px) {
+    .hero, .tiers { grid-template-columns: minmax(0, 1fr); }
+    .hero > *, .tiers > * { min-width: 0; }
+    body { overflow-x: hidden; }
+    .wrap { padding-left: 16px; padding-right: 16px; }
+    section { padding-top: 64px; padding-bottom: 64px; }
+    nav .btn { padding: 9px 14px; }
+    .hero { min-height: 0; padding-top: 24px; }
+    .bento { grid-template-columns: 1fr; }
+    .c-a, .c-b, .c-c, .c-d, .c-e, .c-f { grid-column: auto; }
+    .c-f { flex-direction: column; align-items: flex-start; }
+    .steps { grid-template-columns: 1fr; }
+    .nav-links a:not(.btn) { display: none; }
+  }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <nav>
+    <a class="brand" href="#"><img src="logo.png" alt="">NJ-Flush</a>
+    <div class="nav-links">
+      <a href="#tiers">How it flushes</a>
+      <a href="#features">Features</a>
+      <a href="https://github.com/NJ-Burrito/NJ-Flush">Source</a>
+      <a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><i class="ph ph-download-simple"></i>Download</a>
+    </div>
+  </nav>
+</header>
+
+<main>
+  <section class="wrap hero" style="padding-top:40px">
+    <div>
+      <h1>Your RAM is full. <em>Flush it.</em></h1>
+      <p class="lede">One double-click hands memory back to Windows, while a toilet flushes on your screen.</p>
+      <div class="ctas">
+        <a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><i class="ph ph-download-simple"></i>Download</a>
+        <a class="btn btn-ghost" href="https://github.com/NJ-Burrito/NJ-Flush"><i class="ph ph-github-logo"></i>Source</a>
+      </div>
+    </div>
+    <div class="stage">
+      <video src="hero.mp4" poster="hero-poster.jpg" autoplay muted loop playsinline
+             aria-label="A clogged flush: red water rises, a plunger pushes three times, then the bowl drains and refills clean"></video>
+    </div>
+  </section>
+
+  <section class="wrap" id="tiers">
+    <h2 class="reveal">The fuller your RAM, the harder it flushes.</h2>
+    <p class="sub reveal">NJ-Flush reads your memory before it starts and picks one of four flushes. The flush itself always does the full job.</p>
+    <div class="gauge reveal" aria-hidden="true">
+      <div class="bar"><span></span><span></span><span></span><span></span></div>
+      <div class="scale"><span>0%</span><span>80%</span><span>90%</span><span>96%</span></div>
+    </div>
+    <div class="tiers">
+      <div class="tier-list">
+        <div class="tier reveal" style="--c:var(--t1)"><div><div class="range">under 80%</div><h3>Light flush</h3><p>One press, a gentle half drain, a quick refill.</p></div></div>
+        <div class="tier reveal" style="--c:var(--t2)"><div><div class="range">80 to 89%</div><h3>Medium flush</h3><p>The full swirl, all the way down the drain.</p></div></div>
+        <div class="tier reveal" style="--c:var(--t3)"><div><div class="range">90 to 95%</div><h3>Heavy flush</h3><p>Murky water, two presses, the bowl shakes and splashes.</p></div></div>
+        <div class="tier reveal" style="--c:var(--t4)"><div><div class="range">96% and up</div><h3>Clogged</h3><p>The water rises, the press fails, the plunger goes in three times, then it bursts free.</p></div></div>
+      </div>
+      <figure class="reveal">
+        <img src="heavy.gif" alt="The heavy flush: amber water swirls down while the bowl shakes" loading="lazy" width="360" height="360">
+        <figcaption>The heavy flush, at 93% RAM.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="wrap" id="features">
+    <h2 class="reveal">Small, quiet, out of the way.</h2>
+    <div class="bento">
+      <div class="cell c-a reveal">
+        <i class="ph ph-broom"></i>
+        <h3>A real flush, not a placebo</h3>
+        <p>Empties every working set, writes the modified list to disk, purges the standby cache and stops leftover helper processes from closed developer sessions. Nothing else is touched.</p>
+      </div>
+      <div class="cell c-b reveal"><i class="ph ph-keyboard"></i><h3>Flush from anywhere</h3><p>Press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>F</kbd>, or double-click the widget.</p></div>
+      <div class="cell c-c reveal"><i class="ph ph-lightning"></i><h3>Auto-flush</h3><p>Turn it on and NJ-Flush flushes by itself when RAM stays at 90% for 30 seconds, at most once every 10 minutes.</p></div>
+      <div class="cell c-d reveal"><i class="ph ph-chart-pie-slice"></i><h3>Memory breakdown</h3><p>See what holds your RAM: apps, kernel, cache, and the share no flush can reach.</p></div>
+      <div class="cell c-e reveal"><i class="ph ph-sliders-horizontal"></i><h3>Your settings</h3><p>Animation, sound, the File Explorer restart and start with Windows, each one click away.</p></div>
+      <div class="cell c-f reveal">
+        <div>
+          <h3>The widget above your clock</h3>
+          <p>Live RAM, dim until you hover. Its bar takes the colour of the flush it would play. Try it:</p>
+          <p style="margin-top:12px"><input type="range" id="ram" min="30" max="99" value="74" aria-label="RAM in use" style="width:min(320px,100%);accent-color:var(--accent)"></p>
+        </div>
+        <div class="widget" aria-live="polite">
+          <div class="row"><b id="w-pct">74%</b><small id="w-gb">11.73/15.85 GB</small></div>
+          <div class="track"><div class="fill" id="w-fill"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap" id="install">
+    <h2 class="reveal">Three steps, one prompt, ever.</h2>
+    <div class="steps">
+      <div class="step reveal"><h3><i class="ph ph-download-simple"></i>Download</h3><p>Get <code>NJ-Flush.exe</code> from the latest release. One file, no installer.</p></div>
+      <div class="step reveal"><h3><i class="ph ph-shield-check"></i>Approve once</h3><p>The first run asks for admin rights one time, to register the task a RAM flush needs.</p></div>
+      <div class="step reveal"><h3><i class="ph ph-drop"></i>Flush</h3><p>From then on, every double-click flushes with no prompt at all.</p></div>
+    </div>
+    <p class="note reveal">Windows 10 or 11. The file is not code-signed yet, so SmartScreen may ask on the first run: choose More info, then Run anyway. Uninstall any time from the widget's menu.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>NJ-Flush by Nader Alzghoul. MIT licence.</span>
+    <span>Sound effects from <a href="https://mixkit.co">Mixkit</a>.</span>
+  </div>
+</footer>
+
+<script>
+  // reveal on scroll (IntersectionObserver, no scroll listener)
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .2 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  // widget replica: same colour rule as the app (cyan < 80, yellow < 90, orange < 96, red)
+  const ram = document.getElementById('ram'), pct = document.getElementById('w-pct'), gb = document.getElementById('w-gb'), fill = document.getElementById('w-fill');
+  const tint = p => p >= 96 ? '#f87171' : p >= 90 ? '#fb923c' : p >= 80 ? '#facc15' : '#22d3ee';
+  function draw() { const p = +ram.value; pct.textContent = p + '%'; gb.textContent = (15.85 * p / 100).toFixed(2) + '/15.85 GB'; fill.style.width = p + '%'; fill.style.background = tint(p); }
+  ram.addEventListener('input', draw); draw();
+</script>
+</body>
+</html>

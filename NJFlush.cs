@@ -1,0 +1,906 @@
+// NJ-Flush: one self-installing file.
+//   double-click        -> first time: copies itself to %LOCALAPPDATA%\NJ-Flush and registers an elevated task (one UAC prompt);
+//                          every time: runs the task, so no prompt.
+//   /flush  (the task)  -> dimmed full-screen toilet animation + sound while it restarts File Explorer and flushes RAM
+//                          (empty working sets, flush modified list, purge standby cache), then starts the widget.
+//   /preview <tier>     -> plays one tier's animation (light|medium|heavy|clogged) without flushing.
+//   /widget             -> tiny RAM widget above the clock: live "XX%  used/total GB", dim until hovered,
+//                          double-click or Ctrl+Alt+F = flush; right-click = flush, breakdown, settings, previews, uninstall.
+//   /uninstall          -> (elevated) removes the task; the widget menu runs it.
+// Settings: %LOCALAPPDATA%\NJ-Flush\settings.ini (animation, sound, restart Explorer, auto-flush, start with Windows).
+// Build: csc /target:winexe /win32icon:NJ-Flush.ico /resource:flush-<tier>.wav x4 (+ WPF refs), see build.cmd.
+using System;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Text;
+using System.IO;
+using System.Linq;
+using System.Management;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+using System.Windows.Forms;
+using W = System.Windows;
+using WM = System.Windows.Media;
+using WA = System.Windows.Media.Animation;
+
+static class App {
+    public static readonly string Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NJ-Flush");
+    public static readonly string Exe = Path.Combine(Dir, "NJ-Flush.exe");
+    const string TaskName = "NJ-Flush";
+
+    [STAThread]
+    static int Main(string[] args) {
+        string mode = args.Length > 0 ? args[0].ToLowerInvariant() : "";
+        Settings.Load();
+        if (mode == "/widget") { Widget.Start(); return 0; }
+        if (mode == "/flush") {
+            if (Settings.CooldownLeft() > 0) return 0;   // a flush ran moments ago: repeated triggers never stack (Nader 2026-11-23)
+            Settings.MarkFlush();
+            if (Settings.Animation) Overlay.Run(null); else Mem.Flush();
+            StartWidget(); return 0;
+        }
+        if (mode == "/preview") {  // light|medium|heavy|clogged [solid], no flush; "solid" = opaque backdrop for screen recordings
+            Overlay.Solid = args.Any(a => a.ToLowerInvariant() == "solid");
+            Overlay.Run(args.Length > 1 ? args[1] : "medium"); return 0;
+        }
+        if (mode == "/uninstall") return Run("schtasks.exe", "/delete /tn " + TaskName + " /f", null);
+        if (mode == "/install") return Install() ? 0 : 1;
+        return Launch();
+    }
+
+    static int Launch() {
+        string self = Assembly.GetExecutingAssembly().Location;
+        if (!string.Equals(self, Exe, StringComparison.OrdinalIgnoreCase)) CopySelf(self);
+        int left = Settings.CooldownLeft();
+        if (left > 0) {
+            MessageBox.Show(string.Format("NJ-Flush just flushed. The next flush is available in {0} s.", left), "NJ-Flush",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return 0;
+        }
+        // fast path: the task exists -> one schtasks call (the separate /query cost ~0.5 s on every double-click)
+        if (TaskOk(fast: true)) return 0;
+        if (!TaskOk()) {
+            try {
+                using (var p = Process.Start(new ProcessStartInfo(Exe, "/install") { Verb = "runas", UseShellExecute = true })) {
+                    p.WaitForExit();
+                    if (p.ExitCode != 0) { MessageBox.Show("NJ-Flush could not register its task.", "NJ-Flush"); return 1; }
+                }
+            } catch (System.ComponentModel.Win32Exception) {
+                MessageBox.Show("NJ-Flush needs admin approval once, the first time, to install.", "NJ-Flush");
+                return 1;
+            }
+        }
+        Run("schtasks.exe", "/run /tn " + TaskName, null);
+        return 0;
+    }
+
+    // copy (or update) this file into the install folder; a running copy is renamed out of the way first
+    static void CopySelf(string self) {
+        try {
+            Directory.CreateDirectory(Dir);
+            if (File.Exists(Exe) && File.ReadAllBytes(Exe).SequenceEqual(File.ReadAllBytes(self))) return;
+            try { File.Copy(self, Exe, true); }
+            catch (IOException) {
+                string old = Exe + ".old";
+                try { File.Delete(old); } catch (Exception) { }
+                File.Move(Exe, old);
+                File.Copy(self, Exe, true);
+            }
+        } catch (Exception) { }  // keep whatever copy is installed
+    }
+
+    static bool TaskOk(bool fast = false) {
+        if (fast) return Run("schtasks.exe", "/run /tn " + TaskName, null) == 0;  // runs it when it exists
+        var sb = new StringBuilder();
+        return Run("schtasks.exe", "/query /tn " + TaskName + " /xml", sb) == 0 &&
+               sb.ToString().IndexOf(Exe, StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    // elevated: on-demand task for the current user, highest privileges, interactive (so the animation shows)
+    static bool Install() {
+        string xml =
+            "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n" +
+            "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n" +
+            " <Principals><Principal id=\"Author\"><LogonType>InteractiveToken</LogonType><RunLevel>HighestAvailable</RunLevel></Principal></Principals>\n" +
+            " <Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>" +
+            "<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries><ExecutionTimeLimit>PT5M</ExecutionTimeLimit><Enabled>true</Enabled></Settings>\n" +
+            " <Actions Context=\"Author\"><Exec><Command>" +
+            System.Security.SecurityElement.Escape(Exe) + "</Command><Arguments>/flush</Arguments></Exec></Actions>\n" +
+            "</Task>";
+        string tmp = Path.Combine(Path.GetTempPath(), "nj-flush-task.xml");
+        File.WriteAllText(tmp, xml, Encoding.Unicode);
+        int rc = Run("schtasks.exe", "/create /tn " + TaskName + " /xml \"" + tmp + "\" /f", null);
+        try { File.Delete(tmp); } catch (Exception) { }
+        return rc == 0;
+    }
+
+    static void StartWidget() {
+        foreach (string name in new[] { "NJ-Widget", "NJ-Flush" })  // NJ-Widget: the older two-file version
+            foreach (var p in Process.GetProcessesByName(name))
+                if (p.Id != Process.GetCurrentProcess().Id) try { p.Kill(); p.WaitForExit(2000); } catch (Exception) { }
+        Process.Start(new ProcessStartInfo(Assembly.GetExecutingAssembly().Location, "/widget") { UseShellExecute = false });
+    }
+
+    public static int Run(string file, string args, StringBuilder output) {
+        var psi = new ProcessStartInfo(file, args) { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = output != null };
+        using (var p = Process.Start(psi)) {
+            if (output != null) output.Append(p.StandardOutput.ReadToEnd());
+            p.WaitForExit();
+            return p.ExitCode;
+        }
+    }
+
+    public static void FlushNow() { if (Settings.CooldownLeft() == 0) Run("schtasks.exe", "/run /tn " + TaskName, null); }
+
+    // removes the task (one elevated call), the autostart entry and, after this process exits, the install folder
+    public static void Uninstall() {
+        try {
+            using (var p = Process.Start(new ProcessStartInfo(Exe, "/uninstall") { Verb = "runas", UseShellExecute = true })) p.WaitForExit();
+        } catch (System.ComponentModel.Win32Exception) { return; }  // UAC declined: nothing removed
+        Settings.SetAutostart(false);
+        Process.Start(new ProcessStartInfo("cmd.exe", "/c ping -n 3 127.0.0.1 >nul & rmdir /s /q \"" + Dir + "\"") { CreateNoWindow = true, UseShellExecute = false });
+    }
+}
+
+static class Settings {
+    static readonly string File_ = Path.Combine(App.Dir, "settings.ini");
+    public static readonly string LastFile = Path.Combine(App.Dir, "last.txt");
+    public static bool Animation = true, Sound = true, RestartExplorer = true, AutoFlush = false;
+    public static int AutoAt = 90;  // auto-flush when RAM in use stays at or above this % for 30 s, at most once per 10 min
+    const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+
+    public static void Load() {
+        try {
+            foreach (string line in File.ReadAllLines(File_)) {
+                int i = line.IndexOf('='); if (i < 0) continue;
+                string k = line.Substring(0, i).Trim().ToLowerInvariant(), v = line.Substring(i + 1).Trim();
+                bool b = v == "1" || v.ToLowerInvariant() == "true"; int n;
+                if (k == "animation") Animation = b; else if (k == "sound") Sound = b;
+                else if (k == "restartexplorer") RestartExplorer = b; else if (k == "autoflush") AutoFlush = b;
+                else if (k == "autoat" && int.TryParse(v, out n) && n >= 50 && n <= 99) AutoAt = n;
+                else if (k == "cooldown" && int.TryParse(v, out n) && n >= 10 && n <= 600) Cooldown = n;
+            }
+        } catch (Exception) { }  // no file yet: defaults
+    }
+    public static void Save() {
+        try {
+            Directory.CreateDirectory(App.Dir);
+            File.WriteAllText(File_, string.Format("animation={0}\r\nsound={1}\r\nrestartexplorer={2}\r\nautoflush={3}\r\nautoat={4}\r\ncooldown={5}\r\n",
+                Animation ? 1 : 0, Sound ? 1 : 0, RestartExplorer ? 1 : 0, AutoFlush ? 1 : 0, AutoAt, Cooldown));
+        } catch (Exception) { }
+    }
+    public static bool Autostart() {
+        using (var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(RunKey)) return k != null && k.GetValue("NJ-Flush") != null;
+    }
+    public static void SetAutostart(bool on) {
+        using (var k = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(RunKey)) {
+            if (on) k.SetValue("NJ-Flush", "\"" + App.Exe + "\" /widget"); else k.DeleteValue("NJ-Flush", false);
+        }
+    }
+    public static string Last() { try { return File.ReadAllText(LastFile).Trim(); } catch (Exception) { return "no flush yet"; } }
+
+    // cooldown: seconds after a flush starts before the next may run (settings.ini cooldown=, 10-600, default 60)
+    public static int Cooldown = 60;
+    static readonly string StartFile = Path.Combine(App.Dir, "flush.at");
+    public static void MarkFlush() { try { Directory.CreateDirectory(App.Dir); File.WriteAllText(StartFile, DateTime.Now.Ticks.ToString()); } catch (Exception) { } }
+    public static int CooldownLeft() {
+        try {
+            double since = (DateTime.Now - new DateTime(long.Parse(File.ReadAllText(StartFile).Trim()))).TotalSeconds;
+            return since < 0 ? 0 : Math.Max(0, (int)Math.Ceiling(Cooldown - since));  // clock moved back: do not lock
+        } catch (Exception) { return 0; }
+    }
+}
+
+// Leftover helper processes (2026-11-23, RAMMap on Nader's PC: 5.2 GB of page tables, three full sets of Claude MCP helper servers still
+// running from sessions closed a day earlier). A process tree is a leftover only when ALL hold: its root is node.exe / cmd.exe, its parent
+// process no longer exists, it started more than 6 hours ago, and its command line names a known helper (npx, Playwright MCP / test-server,
+// context7, knip, flint, NJ-QA, business-wrap). Its children (conhost, node) go with it. Anything else is never touched.
+static class Orphans {
+    static readonly string[] Helpers = { "npx-cli.js", @"@playwright\mcp", "@playwright/mcp", "context7-mcp", @"@knip\mcp", "@knip/mcp", "flint-chart-mcp",
+                                         @"business-wrap\mcp", "business-wrap/mcp", @"NJ-QA\mcp", "NJ-QA/mcp", "test-server -c", "mcp-server" };
+    const double MinAgeHours = 6;
+
+    public static System.Collections.Generic.List<int> Find() {
+        var rows = new System.Collections.Generic.List<ManagementObject>();
+        using (var q = new ManagementObjectSearcher("SELECT ProcessId, ParentProcessId, Name, CommandLine, CreationDate FROM Win32_Process"))
+            foreach (ManagementObject o in q.Get()) rows.Add(o);
+        var live = new System.Collections.Generic.HashSet<uint>(rows.Select(o => (uint)o["ProcessId"]));
+        var kids = rows.GroupBy(o => (uint)o["ParentProcessId"]).ToDictionary(g => g.Key, g => g.Select(o => (uint)o["ProcessId"]).ToList());
+        var found = new System.Collections.Generic.List<int>();
+        foreach (var o in rows) {
+            string name = ((string)o["Name"] ?? "").ToLowerInvariant(), cmd = (string)o["CommandLine"] ?? "";
+            if (name != "node.exe" && name != "cmd.exe") continue;
+            if (live.Contains((uint)o["ParentProcessId"])) continue;
+            string cd = (string)o["CreationDate"]; if (cd == null) continue;
+            if ((DateTime.Now - ManagementDateTimeConverter.ToDateTime(cd)).TotalHours < MinAgeHours) continue;
+            if (!Helpers.Any(h => cmd.IndexOf(h, StringComparison.OrdinalIgnoreCase) >= 0)) continue;
+            var stack = new System.Collections.Generic.Stack<uint>(); stack.Push((uint)o["ProcessId"]);
+            while (stack.Count > 0) {
+                uint id = stack.Pop(); if (found.Contains((int)id)) continue; found.Add((int)id);
+                System.Collections.Generic.List<uint> c; if (kids.TryGetValue(id, out c)) foreach (var k in c) stack.Push(k);
+            }
+        }
+        return found;
+    }
+
+    public static int Reap() {
+        int n = 0;
+        try { foreach (int id in Find()) try { Process.GetProcessById(id).Kill(); n++; } catch (Exception) { } } catch (Exception) { }
+        return n;
+    }
+}
+
+static class Mem {
+    [DllImport("ntdll.dll")] static extern int RtlAdjustPrivilege(int p, bool enable, bool thread, out bool was);
+    [DllImport("ntdll.dll")] static extern int NtSetSystemInformation(int cls, ref int info, int len);
+    [DllImport("ntdll.dll")] static extern int NtQuerySystemInformation(int cls, [Out] IntPtr[] buf, int len, out int ret);
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MemStatus { public uint len, load; public ulong total, avail, tPage, aPage, tVirt, aVirt, aExt; }
+    [DllImport("kernel32.dll")] static extern bool GlobalMemoryStatusEx(ref MemStatus m);
+    [StructLayout(LayoutKind.Sequential)]
+    struct PerfInfo { public uint cb; public IntPtr commitTotal, commitLimit, commitPeak, physTotal, physAvail, sysCache, kTotal, kPaged, kNonpaged, pageSize; public uint handles, procs, threads; }
+    [DllImport("psapi.dll")] static extern bool GetPerformanceInfo(out PerfInfo pi, int size);
+
+    const double GB = 1073741824.0;
+
+    public static bool Status(ref MemStatus m) { m.len = (uint)Marshal.SizeOf(typeof(MemStatus)); return GlobalMemoryStatusEx(ref m); }
+
+    static double UsedGB() { var m = new MemStatus(); Status(ref m); return (m.total - m.avail) / GB; }
+
+    static void Privileges() { bool was; RtlAdjustPrivilege(13, true, false, out was); RtlAdjustPrivilege(5, true, false, out was); }
+
+    public static string Flush() {
+        double before = UsedGB();
+        int leftovers = Orphans.Reap();  // 2026-11-23: leftover helper processes first (their page tables and RAM come back)
+        if (Settings.RestartExplorer) RestartExplorer();
+        Privileges();
+        int failed = 0;
+        foreach (int c in new[] { 2, 3, 4, 5 }) {  // empty working sets, flush modified, purge standby, purge low-priority standby
+            int cmd = c;
+            if (NtSetSystemInformation(80, ref cmd, 4) != 0) failed++;
+        }
+        double after = UsedGB();
+        string line = failed >= 3 ? "failed (no admin rights)" : string.Format("freed {0:0.00} GB ({1:0.0} -> {2:0.0} GB)", before - after, before, after);
+        try { File.WriteAllText(Settings.LastFile, DateTime.Now.ToString("yyyy-MM-dd HH:mm") + "  " + line); } catch (Exception) { }
+        return failed >= 3 ? "Flush failed: no admin rights"
+                           : string.Format("Freed {0:0.00} GB   ({1:0.0} GB -> {2:0.0} GB)", before - after, before, after)
+                             + (leftovers > 0 ? string.Format("\nStopped {0} leftover helper processes", leftovers) : "");
+    }
+
+    // Kill File Explorer; Windows restarts the shell itself (as the normal user). Start it only if it does not come back.
+    static void RestartExplorer() {
+        var ex = Process.GetProcessesByName("explorer");
+        if (ex.Length == 0) return;
+        foreach (var p in ex) try { p.Kill(); p.WaitForExit(3000); } catch (Exception) { }
+        for (int i = 0; i < 40 && Process.GetProcessesByName("explorer").Length == 0; i++) Thread.Sleep(150);
+        if (Process.GetProcessesByName("explorer").Length == 0) Process.Start("explorer.exe");
+    }
+
+    // RAMMap-style summary from the kernel's own page lists (locale-independent, no extra tools)
+    public static string Breakdown() {
+        var m = new MemStatus(); Status(ref m);
+        double total = m.total / GB, inUse = (m.total - m.avail) / GB;
+        double page = Environment.SystemPageSize;
+        Privileges();
+        var buf = new IntPtr[22]; int ret;
+        bool lists = NtQuerySystemInformation(80, buf, buf.Length * IntPtr.Size, out ret) == 0;
+        Func<int, int, double> pages = (from, count) => { double s = 0; for (int i = from; i < from + count; i++) s += buf[i].ToInt64(); return s * page / GB; };
+        double free = lists ? pages(0, 2) : 0, modified = lists ? pages(2, 2) : 0, standby = lists ? pages(5, 8) : 0;
+        double apps = 0;
+        foreach (var p in Process.GetProcesses()) try { apps += p.WorkingSet64 / GB; } catch (Exception) { }
+        PerfInfo pi; double kernel = 0;
+        if (GetPerformanceInfo(out pi, Marshal.SizeOf(typeof(PerfInfo))))
+            kernel = (pi.kPaged.ToInt64() + pi.kNonpaged.ToInt64()) * (double)pi.pageSize.ToInt64() / GB;
+        double hidden = Math.Max(0, inUse - apps - kernel - modified);
+        var sb = new StringBuilder();
+        sb.AppendFormat("In use            {0,6:0.00} GB of {1:0.00} GB\n\n", inUse, total);
+        sb.AppendFormat("Apps              {0,6:0.00} GB\n", apps);
+        sb.AppendFormat("Kernel pools      {0,6:0.00} GB\n", kernel);
+        sb.AppendFormat("Modified (to disk){0,6:0.00} GB\n", modified);
+        sb.AppendFormat("Hidden            {0,6:0.00} GB   drivers, hypervisor / VBS, page tables\n\n", hidden);
+        if (lists) {
+            sb.AppendFormat("Cache (standby)   {0,6:0.00} GB   free to reuse\n", standby);
+            sb.AppendFormat("Free              {0,6:0.00} GB\n", free);
+        } else sb.Append("(Page lists need admin: run a flush first.)\n");
+        // 2026-11-23: reserved (commit) memory, process counts, leftovers, Memory Integrity: what RAMMap showed behind the "fake" RAM
+        double commitUsed = (m.tPage - m.aPage) / GB, commitLimit = m.tPage / GB;
+        var procs = Process.GetProcesses();
+        Func<string, int> nOf = n => procs.Count(p => string.Equals(p.ProcessName, n, StringComparison.OrdinalIgnoreCase));
+        int left = 0; try { left = Orphans.Find().Count; } catch (Exception) { }
+        bool hvci = false;
+        try {
+            using (var k = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity"))
+                hvci = k != null && Convert.ToInt32(k.GetValue("Enabled", 0)) == 1;
+        } catch (Exception) { }
+        sb.AppendFormat("\nReserved (commit) {0,6:0.00} GB of {1:0.00} GB{2}\n", commitUsed, commitLimit, commitUsed / commitLimit >= 0.9 ? "   NEAR THE LIMIT" : "");
+        sb.AppendFormat("Processes         {0,6}   node {1} / cmd {2} / conhost {3}\n", procs.Length, nOf("node"), nOf("cmd"), nOf("conhost"));
+        sb.AppendFormat("Leftover helpers  {0,6}   {1}\n", left, left > 0 ? "a flush stops them" : "none");
+        sb.AppendFormat("Memory Integrity  {0,6}   {1}\n", hvci ? "on" : "off", hvci ? "holds memory no tool attributes (part of Hidden)" : "");
+        if (nOf("node") > 30) sb.Append("\nMany node processes: each VS Code window and Claude session starts its own helpers; close the ones you do not use.\n");
+        if (hidden > total * 0.25)
+            sb.Append("\nA large Hidden share is memory no flush can reach. Restarting Windows clears it;\n" +
+                      "turning off Memory Integrity frees part of it (lowers security).");
+        return sb.ToString();
+    }
+}
+
+// Overlay: four flush tiers by RAM in use when the flush starts (Nader 2026-11-23): 70 light, 80 medium, 90 heavy, 96 clogged.
+// Motion built on nj-ui-motion-laws (L1 squash, L2 anticipation, L3 one motion at a time, L5 follow-through, L6 easing, L7 arcs,
+// L8 secondary action, L10 exaggerated feedback, L26 peak-end) and nj-animation-direction (beats = pressure changes, holds never frozen).
+// Sound (nj-real-sound): one premixed soundtrack per tier from real Mixkit recordings (make_sfx.py), started with the clock, so every
+// sound sits on its cue. Change a cue time here -> change it in make_sfx.py.
+// Windows "Show animations" off -> no motion, the tier and the result still show (reduced motion keeps the feedback).
+static class Overlay {
+    public static bool Solid;  // opaque backdrop: screen recordings never show the desktop behind
+    const string Xaml = @"
+<Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
+        WindowStyle='None' AllowsTransparency='True' Background='Transparent' Topmost='True' ShowInTaskbar='False'
+        WindowState='Maximized' ResizeMode='NoResize'>
+  <Grid x:Name='Root' Opacity='0'>
+    <!-- Nader 2026-11-23: a lighter dim (not a blackout), no glow behind the toilet; solid (recording) mode = opaque + glow -->
+    <Rectangle x:Name='Dim' Fill='#05080F' Opacity='0.45'/>
+    <Ellipse x:Name='GlowDisc' Width='1100' Height='1100' IsHitTestVisible='False' Opacity='0'>
+      <Ellipse.Fill><RadialGradientBrush>
+        <GradientStop x:Name='Glow' Color='#3322D3EE' Offset='0'/><GradientStop Color='#0022D3EE' Offset='1'/>
+      </RadialGradientBrush></Ellipse.Fill>
+    </Ellipse>
+    <StackPanel VerticalAlignment='Center' HorizontalAlignment='Center'>
+      <Viewbox Height='460' RenderTransformOrigin='0.5,0.5'>
+        <Viewbox.RenderTransform><ScaleTransform x:Name='Pop' ScaleX='0.6' ScaleY='0.6'/></Viewbox.RenderTransform>
+        <Canvas Width='300' Height='440'>
+          <Canvas.RenderTransform><TranslateTransform x:Name='Shake'/></Canvas.RenderTransform>
+          <Canvas.Effect><DropShadowEffect BlurRadius='46' ShadowDepth='12' Direction='270' Opacity='0.8' Color='#000000'/></Canvas.Effect>
+          <Canvas.Resources>
+            <LinearGradientBrush x:Key='Porcelain' StartPoint='0,0.5' EndPoint='1,0.5'>
+              <GradientStop Color='#B9C6D1' Offset='0'/><GradientStop Color='#F8FAFC' Offset='0.32'/>
+              <GradientStop Color='#FFFFFF' Offset='0.45'/><GradientStop Color='#DCE4EA' Offset='0.78'/><GradientStop Color='#A7B5C1' Offset='1'/>
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key='Chrome' StartPoint='0,0' EndPoint='1,1'>
+              <GradientStop Color='#FFFFFF' Offset='0'/><GradientStop Color='#CBD5E1' Offset='0.35'/>
+              <GradientStop Color='#64748B' Offset='0.55'/><GradientStop Color='#E2E8F0' Offset='1'/>
+            </LinearGradientBrush>
+          </Canvas.Resources>
+
+          <!-- floor shadow, pedestal -->
+          <Ellipse Canvas.Left='30' Canvas.Top='398' Width='240' Height='34'>
+            <Ellipse.Fill><RadialGradientBrush><GradientStop Color='#99000000' Offset='0'/><GradientStop Color='#00000000' Offset='1'/></RadialGradientBrush></Ellipse.Fill>
+          </Ellipse>
+          <Path Data='M92,320 C100,365 92,392 78,412 L222,412 C208,392 200,365 208,320 Z' Fill='{StaticResource Porcelain}'/>
+          <Rectangle Canvas.Left='76' Canvas.Top='406' Width='148' Height='8' RadiusX='4' RadiusY='4' Fill='#8A99A6'/>
+
+          <!-- tank and lid -->
+          <Rectangle Canvas.Left='46' Canvas.Top='16' Width='208' Height='96' RadiusX='18' RadiusY='18' Fill='{StaticResource Porcelain}'/>
+          <Rectangle Canvas.Left='56' Canvas.Top='104' Width='188' Height='10' RadiusX='5' RadiusY='5' Fill='#7C8B98' Opacity='0.45'/>
+          <Rectangle Canvas.Left='36' Canvas.Top='4' Width='228' Height='24' RadiusX='12' RadiusY='12'>
+            <Rectangle.Fill><LinearGradientBrush StartPoint='0.5,0' EndPoint='0.5,1'>
+              <GradientStop Color='#FFFFFF' Offset='0'/><GradientStop Color='#E8EEF2' Offset='0.6'/><GradientStop Color='#B3C0CB' Offset='1'/>
+            </LinearGradientBrush></Rectangle.Fill>
+          </Rectangle>
+          <Rectangle Canvas.Left='54' Canvas.Top='8' Width='192' Height='3' RadiusX='1.5' RadiusY='1.5' Fill='White' Opacity='0.95'/>
+
+          <!-- chrome flush button -->
+          <Ellipse Canvas.Left='122' Canvas.Top='38' Width='56' Height='56' Fill='{StaticResource Chrome}'>
+            <Ellipse.Effect><DropShadowEffect BlurRadius='6' ShadowDepth='2' Direction='270' Opacity='0.35'/></Ellipse.Effect>
+          </Ellipse>
+          <Canvas>
+            <Canvas.RenderTransform><ScaleTransform x:Name='BtnScale' CenterX='150' CenterY='66'/></Canvas.RenderTransform>
+            <Ellipse Canvas.Left='129' Canvas.Top='45' Width='42' Height='42'>
+              <Ellipse.Fill><RadialGradientBrush GradientOrigin='0.35,0.3'>
+                <GradientStop x:Name='BtnHi' Color='#CFFAFE' Offset='0'/><GradientStop x:Name='BtnLo' Color='#0891B2' Offset='1'/>
+              </RadialGradientBrush></Ellipse.Fill>
+            </Ellipse>
+            <Ellipse Canvas.Left='137' Canvas.Top='49' Width='18' Height='10' Fill='White' Opacity='0.75'/>
+          </Canvas>
+
+          <!-- bowl, seat, inner wall -->
+          <Ellipse Canvas.Left='20' Canvas.Top='112' Width='260' Height='300'>
+            <Ellipse.Fill><RadialGradientBrush GradientOrigin='0.35,0.28' Center='0.45,0.4' RadiusX='0.68' RadiusY='0.68'>
+              <GradientStop Color='#FFFFFF' Offset='0'/><GradientStop Color='#F1F5F9' Offset='0.5'/><GradientStop Color='#A9B7C3' Offset='1'/>
+            </RadialGradientBrush></Ellipse.Fill>
+            <Ellipse.Effect><DropShadowEffect BlurRadius='28' ShadowDepth='8' Direction='270' Opacity='0.45'/></Ellipse.Effect>
+          </Ellipse>
+          <Ellipse Canvas.Left='33' Canvas.Top='124' Width='234' Height='276' StrokeThickness='15'>
+            <Ellipse.Stroke><LinearGradientBrush StartPoint='0.2,0' EndPoint='0.8,1'>
+              <GradientStop Color='#FFFFFF' Offset='0'/><GradientStop Color='#E2E8F0' Offset='0.5'/><GradientStop Color='#B6C3CE' Offset='1'/>
+            </LinearGradientBrush></Ellipse.Stroke>
+          </Ellipse>
+          <Ellipse Canvas.Left='52' Canvas.Top='142' Width='196' Height='244'>
+            <Ellipse.Fill><LinearGradientBrush StartPoint='0.5,0' EndPoint='0.5,1'>
+              <GradientStop Color='#7E93A3' Offset='0'/><GradientStop Color='#C8D3DC' Offset='0.35'/><GradientStop Color='#EEF3F6' Offset='1'/>
+            </LinearGradientBrush></Ellipse.Fill>
+          </Ellipse>
+
+          <!-- water -->
+          <Grid Canvas.Left='64' Canvas.Top='158' Width='172' Height='216'>
+            <Grid.Clip><EllipseGeometry Center='86,108' RadiusX='86' RadiusY='108'/></Grid.Clip>
+            <Ellipse><Ellipse.Fill><RadialGradientBrush GradientOrigin='0.5,0.55'>
+              <GradientStop x:Name='WaterIn' Color='#CFFAFE' Offset='0'/><GradientStop x:Name='WaterMid' Color='#22D3EE' Offset='0.55'/>
+              <GradientStop x:Name='WaterOut' Color='#0E7490' Offset='1'/>
+            </RadialGradientBrush></Ellipse.Fill></Ellipse>
+            <Canvas x:Name='Ripples' Width='172' Height='216'/>
+            <Ellipse Width='46' Height='46' RenderTransformOrigin='0.5,0.5'>
+              <Ellipse.Fill><RadialGradientBrush>
+                <GradientStop Color='#020617' Offset='0'/><GradientStop Color='#0B2A3C' Offset='0.7'/><GradientStop Color='#000B2A3C' Offset='1'/>
+              </RadialGradientBrush></Ellipse.Fill>
+              <Ellipse.RenderTransform><ScaleTransform x:Name='DrainScale' ScaleX='0.3' ScaleY='0.3'/></Ellipse.RenderTransform>
+            </Ellipse>
+            <Canvas x:Name='Swirl' Width='172' Height='216'>
+              <Canvas.RenderTransform><TransformGroup>
+                <ScaleTransform x:Name='SwScale' CenterX='86' CenterY='108'/>
+                <RotateTransform x:Name='SwRot' CenterX='86' CenterY='108'/>
+              </TransformGroup></Canvas.RenderTransform>
+            </Canvas>
+            <Canvas x:Name='Bubbles' Width='172' Height='216'/>
+            <Ellipse Width='78' Height='26' HorizontalAlignment='Left' VerticalAlignment='Top' Margin='26,26,0,0' RenderTransformOrigin='0.5,0.5'>
+              <Ellipse.RenderTransform><RotateTransform Angle='-24'/></Ellipse.RenderTransform>
+              <Ellipse.Fill><LinearGradientBrush StartPoint='0,0' EndPoint='0,1'>
+                <GradientStop Color='#99FFFFFF' Offset='0'/><GradientStop Color='#00FFFFFF' Offset='1'/>
+              </LinearGradientBrush></Ellipse.Fill>
+            </Ellipse>
+          </Grid>
+          <Ellipse Canvas.Left='52' Canvas.Top='142' Width='196' Height='244' StrokeThickness='2' Opacity='0.7'>
+            <Ellipse.Stroke><LinearGradientBrush StartPoint='0.5,0' EndPoint='0.5,1'>
+              <GradientStop Color='#40FFFFFF' Offset='0'/><GradientStop Color='#FFFFFFFF' Offset='1'/>
+            </LinearGradientBrush></Ellipse.Stroke>
+          </Ellipse>
+
+          <!-- clogged: the water rising to the rim -->
+          <Ellipse x:Name='Rise' Canvas.Left='56' Canvas.Top='146' Width='188' Height='236' Opacity='0' RenderTransformOrigin='0.5,0.5'
+                   Stroke='#FECACA' StrokeThickness='3'>
+            <Ellipse.Fill><RadialGradientBrush GradientOrigin='0.4,0.35'>
+              <GradientStop Color='#CCFCA5A5' Offset='0'/><GradientStop Color='#CCDC2626' Offset='0.7'/><GradientStop Color='#E67F1D1D' Offset='1'/>
+            </RadialGradientBrush></Ellipse.Fill>
+            <Ellipse.RenderTransform><ScaleTransform x:Name='RiseScale' ScaleX='0.8' ScaleY='0.8'/></Ellipse.RenderTransform>
+          </Ellipse>
+          <Canvas x:Name='Splash' Canvas.Left='145' Canvas.Top='190'/>
+
+          <!-- plunger -->
+          <Canvas x:Name='Plunger' Canvas.Left='108' Canvas.Top='92' Opacity='0'>
+            <Canvas.RenderTransform><TranslateTransform x:Name='PlY' Y='-540'/></Canvas.RenderTransform>
+            <Rectangle Canvas.Left='35' Canvas.Top='0' Width='14' Height='152' RadiusX='7' RadiusY='7'>
+              <Rectangle.Fill><LinearGradientBrush StartPoint='0,0.5' EndPoint='1,0.5'>
+                <GradientStop Color='#FBBF24' Offset='0'/><GradientStop Color='#D97706' Offset='0.35'/>
+                <GradientStop Color='#92400E' Offset='0.75'/><GradientStop Color='#78350F' Offset='1'/>
+              </LinearGradientBrush></Rectangle.Fill>
+            </Rectangle>
+            <Rectangle Canvas.Left='39' Canvas.Top='14' Width='1.5' Height='120' Fill='#78350F' Opacity='0.35'/>
+            <Rectangle Canvas.Left='44' Canvas.Top='30' Width='1' Height='96' Fill='#FDE68A' Opacity='0.35'/>
+            <Canvas Canvas.Top='140'>
+              <Canvas.RenderTransform><ScaleTransform x:Name='Cup' CenterX='42' CenterY='50'/></Canvas.RenderTransform>
+              <Path Data='M2,44 C2,10 22,0 42,0 C62,0 82,10 82,44 Z'>
+                <Path.Fill><RadialGradientBrush GradientOrigin='0.32,0.22' Center='0.45,0.4' RadiusX='0.7' RadiusY='0.8'>
+                  <GradientStop Color='#FCA5A5' Offset='0'/><GradientStop Color='#DC2626' Offset='0.45'/><GradientStop Color='#7F1D1D' Offset='1'/>
+                </RadialGradientBrush></Path.Fill>
+              </Path>
+              <Ellipse Canvas.Left='0' Canvas.Top='38' Width='84' Height='12' Fill='#7F1D1D'/>
+              <Ellipse Canvas.Left='16' Canvas.Top='8' Width='22' Height='11' Fill='White' Opacity='0.5'/>
+            </Canvas>
+          </Canvas>
+        </Canvas>
+      </Viewbox>
+      <Border x:Name='Pill' HorizontalAlignment='Center' Margin='0,22,0,0' Padding='16,5' CornerRadius='15' BorderThickness='1'>
+        <Border.Effect><DropShadowEffect BlurRadius='14' ShadowDepth='3' Direction='270' Opacity='0.6'/></Border.Effect>
+        <TextBlock x:Name='Tier' FontFamily='Thmanyah Sans, Segoe UI' FontSize='15' FontWeight='Bold'/>
+      </Border>
+      <TextBlock x:Name='Msg' Text='Flushing RAM...' Foreground='White' FontFamily='Thmanyah Sans, Segoe UI' FontSize='26'
+                 HorizontalAlignment='Center' TextAlignment='Center' Margin='0,10,0,0' RenderTransformOrigin='0.5,0.5'>
+        <TextBlock.Effect><DropShadowEffect BlurRadius='10' ShadowDepth='2' Direction='270' Opacity='0.95' Color='#000000'/></TextBlock.Effect>
+        <TextBlock.RenderTransform><ScaleTransform x:Name='MsgScale'/></TextBlock.RenderTransform>
+      </TextBlock>
+    </StackPanel>
+  </Grid>
+</Window>";
+
+    static readonly string[] Names = { "LIGHT FLUSH", "MEDIUM FLUSH", "HEAVY FLUSH", "CLOGGED" };
+    static readonly string[] Files = { "flush-light.wav", "flush-medium.wav", "flush-heavy.wav", "flush-clogged.wav" };
+    static readonly string[] Accents = { "#22D3EE", "#2DD4BF", "#FB923C", "#F87171" };
+    static readonly int[] PreviewPct = { 72, 84, 93, 97 };
+    // water and button colours: { in, mid, out }
+    static readonly string[] Clean = { "#CFFAFE", "#22D3EE", "#0E7490" }, Murky = { "#FFEDD5", "#FB923C", "#9A3412" }, Red = { "#FEE2E2", "#F87171", "#7F1D1D" };
+
+    // ponytail: fixed thresholds (Nader 2026-11-23); under 70% still plays the light flush
+    public static int TierOf(double pct) { return pct >= 96 ? 3 : pct >= 90 ? 2 : pct >= 80 ? 1 : 0; }
+
+    static WA.EasingFunctionBase E(WA.EasingFunctionBase e, WA.EasingMode m) { e.EasingMode = m; return e; }
+    static readonly WA.IEasingFunction QIn = E(new WA.QuadraticEase(), WA.EasingMode.EaseIn), QInOut = E(new WA.QuadraticEase(), WA.EasingMode.EaseInOut),
+        CIn = E(new WA.CubicEase(), WA.EasingMode.EaseIn), COut = E(new WA.CubicEase(), WA.EasingMode.EaseOut),
+        Back = new WA.BackEase { Amplitude = 0.5, EasingMode = WA.EasingMode.EaseOut };
+
+    // Nader 2026-11-23: "it took time" -> every duration and cue runs at 60% of the designed length (make_sfx.py SPEED matches)
+    public const double Speed = 0.6;
+    static TimeSpan Ms(double ms) { return TimeSpan.FromMilliseconds(ms * Speed); }
+    static WA.DoubleAnimation A(double? from, double to, int ms, WA.IEasingFunction e) {
+        var a = new WA.DoubleAnimation { To = to, Duration = Ms(ms), EasingFunction = e };
+        if (from.HasValue) a.From = from.Value;
+        return a;
+    }
+    // keyframes as (ms, value) pairs, eased in-out
+    static WA.DoubleAnimationUsingKeyFrames K(params double[] tv) {
+        var k = new WA.DoubleAnimationUsingKeyFrames();
+        for (int i = 0; i < tv.Length; i += 2) k.KeyFrames.Add(new WA.EasingDoubleKeyFrame(tv[i + 1], WA.KeyTime.FromTimeSpan(Ms(tv[i])), QInOut));
+        return k;
+    }
+    static void S2(WM.ScaleTransform s, WA.AnimationTimeline a) { s.BeginAnimation(WM.ScaleTransform.ScaleXProperty, a); s.BeginAnimation(WM.ScaleTransform.ScaleYProperty, a); }
+    static WM.Color C(string hex) { return (WM.Color)WM.ColorConverter.ConvertFromString(hex); }
+    static WM.Color Alpha(string hex, byte a) { var c = C(hex); c.A = a; return c; }
+    static void Tint(WM.GradientStop s, string hex, int ms) { s.BeginAnimation(WM.GradientStop.ColorProperty, new WA.ColorAnimation(C(hex), Ms(ms))); }
+    static void Shake(WM.TranslateTransform t, double amp, int times) {
+        t.BeginAnimation(WM.TranslateTransform.XProperty, new WA.DoubleAnimation(-amp, amp, Ms(45)) {
+            AutoReverse = true, RepeatBehavior = new WA.RepeatBehavior(times), FillBehavior = WA.FillBehavior.Stop });
+    }
+    static WM.Brush Grad(W.Point a, W.Point b, params WM.Color[] cs) {
+        var g = new WM.LinearGradientBrush { StartPoint = a, EndPoint = b };
+        for (int i = 0; i < cs.Length; i++) g.GradientStops.Add(new WM.GradientStop(cs[i], i / (double)(cs.Length - 1)));
+        return g;
+    }
+
+    // tapered swirl arms (filled crescents, bright at the centre, fading out)
+    static void AddArms(System.Windows.Controls.Canvas swirl) {
+        foreach (int i in Enumerable.Range(0, 8)) {
+            bool big = i % 2 == 0;
+            swirl.Children.Add(new W.Shapes.Path {
+                Data = WM.Geometry.Parse(big ? "M86,108 C88,76 118,52 162,60 C122,64 98,82 86,108 Z" : "M86,108 C88,92 104,80 126,82 C106,87 94,96 86,108 Z"),
+                Fill = Grad(new W.Point(0, 1), new W.Point(1, 0), Alpha("#FFFFFF", (byte)(big ? 235 : 190)), Alpha("#E0FBFF", 20)),
+                RenderTransform = new WM.RotateTransform(i * 45, 86, 108)
+            });
+        }
+    }
+
+    // preview: "light" | "medium" | "heavy" | "clogged" plays that tier without flushing anything
+    public static void Run(string preview) {
+        var ms = new Mem.MemStatus(); Mem.Status(ref ms);
+        double pct = ms.total > 0 ? (ms.total - ms.avail) * 100.0 / ms.total : 0;
+        int tier = TierOf(pct);
+        string result = null;
+        Thread work = null;
+        if (preview != null) {
+            int i = Array.FindIndex(Names, x => x.StartsWith(preview.ToUpperInvariant()));
+            tier = i >= 0 ? i : 1; pct = PreviewPct[tier];
+            result = "Preview: nothing was flushed";
+        } else {
+            work = new Thread(() => { result = Mem.Flush(); }) { IsBackground = true };
+            work.Start();
+        }
+
+        var win = (W.Window)W.Markup.XamlReader.Parse(Xaml);
+        Func<string, object> n = win.FindName;
+        var root = (W.UIElement)n("Root");
+        var pop = (WM.ScaleTransform)n("Pop"); var btn = (WM.ScaleTransform)n("BtnScale"); var shake = (WM.TranslateTransform)n("Shake");
+        var drain = (WM.ScaleTransform)n("DrainScale"); var swScale = (WM.ScaleTransform)n("SwScale"); var swRot = (WM.RotateTransform)n("SwRot");
+        var water = new[] { (WM.GradientStop)n("WaterIn"), (WM.GradientStop)n("WaterMid"), (WM.GradientStop)n("WaterOut") };
+        var btnHi = (WM.GradientStop)n("BtnHi"); var btnLo = (WM.GradientStop)n("BtnLo");
+        var rise = (W.UIElement)n("Rise"); var riseScale = (WM.ScaleTransform)n("RiseScale");
+        var plunger = (W.UIElement)n("Plunger"); var plY = (WM.TranslateTransform)n("PlY"); var cup = (WM.ScaleTransform)n("Cup");
+        var bubbles = (System.Windows.Controls.Canvas)n("Bubbles"); var splash = (System.Windows.Controls.Canvas)n("Splash");
+        var ripples = (System.Windows.Controls.Canvas)n("Ripples");
+        var msg = (System.Windows.Controls.TextBlock)n("Msg"); var msgScale = (WM.ScaleTransform)n("MsgScale");
+        var tierText = (System.Windows.Controls.TextBlock)n("Tier"); var pill = (System.Windows.Controls.Border)n("Pill");
+        AddArms((System.Windows.Controls.Canvas)n("Swirl"));
+        if (Solid) { ((W.UIElement)n("Dim")).Opacity = 1; ((W.UIElement)n("GlowDisc")).Opacity = 1; }
+        if (tier == 3) msg.Text = "Checking the pipes...";
+
+        string accent = Accents[tier];
+        tierText.Text = string.Format("{0}   ·   {1:0}% RAM", Names[tier], pct);
+        tierText.Foreground = new WM.SolidColorBrush(C(accent));
+        pill.Background = new WM.SolidColorBrush(C("#E00B1220"));  // dark pill: readable on any desktop pill.BorderBrush = new WM.SolidColorBrush(Alpha(accent, 0x88));
+        ((WM.GradientStop)n("Glow")).Color = Alpha(accent, 0x40);
+        string[] btnCol = tier == 2 ? Murky : tier == 3 ? Red : Clean;
+        btnHi.Color = C(btnCol[0]); btnLo.Color = C(btnCol[2]);
+        Action<string[], int> tintWater = (cols, t) => { for (int i = 0; i < 3; i++) Tint(water[i], cols[i], t); };
+
+        // ripples on the water surface: the bowl is never frozen
+        for (int i = 0; i < 3; i++) {
+            var sc = new WM.ScaleTransform(0.2, 0.2, 86, 108);
+            var e = new W.Shapes.Ellipse { Width = 172, Height = 216, Stroke = new WM.SolidColorBrush(Alpha("#FFFFFF", 150)), StrokeThickness = 2, Opacity = 0, RenderTransform = sc };
+            ripples.Children.Add(e);
+            var begin = Ms(i * 900);
+            sc.BeginAnimation(WM.ScaleTransform.ScaleXProperty, new WA.DoubleAnimation(0.2, 1, Ms(2700)) { BeginTime = begin, RepeatBehavior = WA.RepeatBehavior.Forever, EasingFunction = COut });
+            sc.BeginAnimation(WM.ScaleTransform.ScaleYProperty, new WA.DoubleAnimation(0.2, 1, Ms(2700)) { BeginTime = begin, RepeatBehavior = WA.RepeatBehavior.Forever, EasingFunction = COut });
+            e.BeginAnimation(W.UIElement.OpacityProperty, new WA.DoubleAnimation(0.55, 0, Ms(2700)) { BeginTime = begin, RepeatBehavior = WA.RepeatBehavior.Forever });
+        }
+
+        // droplets (L8 secondary action) fly out on arcs (L7)
+        var drops = new System.Collections.Generic.List<Tuple<W.Shapes.Path, WM.TranslateTransform>>();
+        for (int i = 0; i < 9; i++) {
+            var t = new WM.TranslateTransform();
+            var tf = new WM.TransformGroup(); tf.Children.Add(new WM.ScaleTransform(0.7 + i % 3 * 0.2, 0.7 + i % 3 * 0.2)); tf.Children.Add(t);
+            var e = new W.Shapes.Path {
+                Data = WM.Geometry.Parse("M5,0 C5,0 10,7 10,11 A5,5 0 1 1 0,11 C0,7 5,0 5,0 Z"), Opacity = 0, RenderTransform = tf,
+                Fill = new WM.RadialGradientBrush(C("#F0F9FF"), C("#22D3EE")) { GradientOrigin = new W.Point(0.35, 0.6) }
+            };
+            splash.Children.Add(e); drops.Add(Tuple.Create(e, t));
+        }
+        Action burst = () => {
+            for (int i = 0; i < drops.Count; i++) {
+                double dx = (i - 4) * 26, up = 48 + (i % 3) * 22;
+                var y = new WA.DoubleAnimationUsingKeyFrames();
+                y.KeyFrames.Add(new WA.EasingDoubleKeyFrame(-up, WA.KeyTime.FromTimeSpan(Ms(320)), COut));
+                y.KeyFrames.Add(new WA.EasingDoubleKeyFrame(80, WA.KeyTime.FromTimeSpan(Ms(780)), QIn));
+                drops[i].Item2.BeginAnimation(WM.TranslateTransform.YProperty, y);
+                drops[i].Item2.BeginAnimation(WM.TranslateTransform.XProperty, A(0, dx, 780, COut));
+                drops[i].Item1.BeginAnimation(W.UIElement.OpacityProperty, K(0, 1, 540, 1, 780, 0));
+            }
+        };
+        // glossy bubbles rise through the clogged water, staggered
+        for (int i = 0; i < 6; i++) {
+            double d = 7 + i % 3 * 4;
+            var e = new W.Shapes.Ellipse {
+                Width = d, Height = d, Stroke = new WM.SolidColorBrush(Alpha("#FFFFFF", 200)), StrokeThickness = 1.2, Opacity = 0.9,
+                Fill = new WM.RadialGradientBrush(Alpha("#FFFFFF", 30), Alpha("#FFFFFF", 110)) { GradientOrigin = new W.Point(0.3, 0.3) },
+                RenderTransform = new WM.TranslateTransform(0, 260)
+            };
+            System.Windows.Controls.Canvas.SetLeft(e, 34 + i * 20); bubbles.Children.Add(e);
+        }
+        Action bubble = () => {
+            int i = 0;
+            foreach (W.UIElement e in bubbles.Children)
+                ((WM.TranslateTransform)e.RenderTransform).BeginAnimation(WM.TranslateTransform.YProperty,
+                    new WA.DoubleAnimation(210, 30, Ms(900 + i * 90)) { BeginTime = Ms(i++ * 150), RepeatBehavior = WA.RepeatBehavior.Forever, EasingFunction = QIn });
+        };
+
+        System.Media.SoundPlayer sound = null;
+        if (Settings.Sound) try { sound = new System.Media.SoundPlayer(Assembly.GetExecutingAssembly().GetManifestResourceStream(Files[tier])); sound.Load(); } catch (Exception) { sound = null; }
+
+        // press: wind-up (L2), squash (L1), settle (L5)
+        Action press = () => S2(btn, K(0, 1, 70, 1.12, 200, 0.68, 420, 1));
+        Action<int, int, double, double> flush = (deg, dur, swirlTo, hole) => {
+            swRot.BeginAnimation(WM.RotateTransform.AngleProperty, A(0, deg, dur, QIn));
+            S2(swScale, A(1, swirlTo, dur, CIn));
+            S2(drain, A(0.3, hole, dur, QIn));
+        };
+        Action refill = () => { S2(swScale, A(null, 1, 560, Back)); S2(drain, A(null, 0.3, 560, COut)); };
+        Action<string> say = s => msg.Text = s;
+
+        var cues = new System.Collections.Generic.List<Tuple<int, Action>>();
+        Action<int, Action> at = (t, a) => cues.Add(Tuple.Create((int)(t * Speed), a));
+        int endAt;
+        bool motion = W.SystemParameters.ClientAreaAnimation;
+        if (!motion) endAt = 400;
+        else if (tier == 0) {           // light: one press, a half drain, quick refill
+            at(420, press);
+            at(600, () => flush(720, 1500, 0.4, 1.2));
+            at(2150, refill);
+            endAt = 2750;
+        } else if (tier == 1) {         // medium: the full swirl
+            at(450, press);
+            at(620, () => flush(1440, 2500, 0.08, 1.7));
+            at(3150, refill);
+            endAt = 3750;
+        } else if (tier == 2) {         // heavy: murky water, two presses, the bowl shakes, splash
+            at(250, () => tintWater(Murky, 450));
+            at(450, press);
+            at(760, press);
+            at(950, () => { flush(2520, 2900, 0.05, 2.0); Shake(shake, 3, 26); });
+            at(3250, burst);
+            at(3900, () => { refill(); tintWater(Clean, 600); });
+            endAt = 4500;
+        } else {                        // clogged: water rises, the press fails, plunger x3, then it bursts free
+            at(200, () => {
+                tintWater(Red, 500);
+                rise.BeginAnimation(W.UIElement.OpacityProperty, A(0, 1, 900, COut));
+                S2(riseScale, A(0.8, 1, 900, COut));
+                bubble();
+            });
+            at(1100, () => { say("It's clogged."); S2(riseScale, new WA.DoubleAnimation(1, 1.035, Ms(450)) { AutoReverse = true, RepeatBehavior = WA.RepeatBehavior.Forever, EasingFunction = QInOut }); });
+            at(1400, () => { press(); swRot.BeginAnimation(WM.RotateTransform.AngleProperty, new WA.DoubleAnimation(0, 40, Ms(220)) { AutoReverse = true, EasingFunction = COut }); Shake(shake, 4, 5); });
+            at(2050, () => {
+                say("Plunging...");
+                plunger.BeginAnimation(W.UIElement.OpacityProperty, A(0, 1, 150, null));
+                plY.BeginAnimation(WM.TranslateTransform.YProperty, A(-540, 0, 520, Back));
+            });
+            foreach (int t in new[] { 2700, 3250, 3800 })
+                at(t, () => {
+                    plY.BeginAnimation(WM.TranslateTransform.YProperty, K(0, 0, 90, -14, 240, 26, 440, 0));
+                    cup.BeginAnimation(WM.ScaleTransform.ScaleYProperty, K(0, 1, 90, 1.05, 240, 0.55, 440, 1));
+                    cup.BeginAnimation(WM.ScaleTransform.ScaleXProperty, K(0, 1, 90, 0.95, 240, 1.25, 440, 1));
+                    Shake(shake, 2, 2);
+                });
+            at(4400, () => {
+                say("Flushing RAM...");
+                plY.BeginAnimation(WM.TranslateTransform.YProperty, A(null, -540, 420, CIn));
+                plunger.BeginAnimation(W.UIElement.OpacityProperty, A(null, 0, 420, CIn));
+                rise.BeginAnimation(W.UIElement.OpacityProperty, A(null, 0, 350, null));
+                S2(riseScale, A(null, 0.8, 350, CIn));
+                bubbles.BeginAnimation(W.UIElement.OpacityProperty, A(null, 0, 300, null));
+                burst();
+                flush(2880, 2400, 0.04, 2.2);
+                tintWater(Clean, 2400);
+                Tint(btnHi, Clean[0], 2400); Tint(btnLo, Clean[2], 2400);
+            });
+            at(6850, refill);
+            endAt = 7450;
+        }
+
+        var clock = new Stopwatch();
+        int next = 0, stage = 0; long shownAt = 0;
+        var timer = new W.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        timer.Tick += delegate {
+            long t = clock.ElapsedMilliseconds;
+            while (next < cues.Count && t >= cues[next].Item1) cues[next++].Item2();
+            long end = (long)(endAt * Speed);
+            // the ending lands (L26); a slow flush (Explorer restart) never holds the screen: after 1.2 s it finishes in the background
+            if (stage == 0 && next >= cues.Count && t >= end && (result != null || t >= end + 1200)) {
+                msg.Text = result ?? "Finishing in the background..."; shownAt = t; stage = 1;
+                if (motion) { S2(msgScale, A(0.85, 1, 380, Back)); msg.BeginAnimation(W.UIElement.OpacityProperty, A(0, 1, 220, null)); }
+            } else if (stage == 1 && t >= shownAt + 1300) {
+                var fade = new WA.DoubleAnimation(0, Ms(motion ? 350 : 1));
+                fade.Completed += delegate { win.Close(); };
+                root.BeginAnimation(W.UIElement.OpacityProperty, fade);
+                stage = 2;
+            }
+        };
+        win.Loaded += delegate {
+            clock.Start(); timer.Start();
+            if (sound != null) sound.Play();   // one soundtrack per tier, cued to this clock
+            root.BeginAnimation(W.UIElement.OpacityProperty, A(null, 1, motion ? 250 : 1, null));
+            if (motion) S2(pop, A(0.6, 1, 450, new WA.BackEase { Amplitude = 0.4, EasingMode = WA.EasingMode.EaseOut }));
+            else { pop.ScaleX = 1; pop.ScaleY = 1; }
+        };
+        win.MouseDown += delegate { win.Close(); };
+        win.KeyDown += (s, e) => { if (e.Key == W.Input.Key.Escape) win.Close(); };
+        win.ShowDialog();
+        timer.Stop(); if (sound != null) sound.Stop();
+        if (work != null) work.Join(20000);  // let the flush finish before the widget starts
+    }
+}
+
+class Widget : Form {
+    [StructLayout(LayoutKind.Sequential)]
+    struct WindowPos { public IntPtr hwnd, after; public int x, y, cx, cy; public uint flags; }
+    [DllImport("psapi.dll")] static extern bool EmptyWorkingSet(IntPtr p);
+    [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int v, int size);
+
+    const double Dim = 0.40, Lit = 0.95;
+    Mem.MemStatus m;
+    string pctText = "", gbText = "";
+    float pct;
+    readonly Font big, small;
+    readonly SolidBrush fg = new SolidBrush(Color.White), track = new SolidBrush(Color.FromArgb(55, 65, 81));
+    readonly SolidBrush ok = new SolidBrush(Color.FromArgb(34, 211, 238)), hot = new SolidBrush(Color.FromArgb(251, 146, 60));
+    readonly SolidBrush warm = new SolidBrush(Color.FromArgb(250, 204, 21)), red = new SolidBrush(Color.FromArgb(248, 113, 113));
+
+    public static void Start() {
+        bool first;
+        using (new Mutex(true, "NJ-Flush-Widget", out first)) {
+            if (!first) return;  // one widget only
+            Application.EnableVisualStyles();
+            Application.Run(new Widget());
+        }
+    }
+
+    Widget() {
+        string face = FontFamily.Families.Any(f => f.Name == "Thmanyah Sans") ? "Thmanyah Sans" : "Segoe UI";
+        big = new Font(face, 10f, FontStyle.Bold); small = new Font(face, 8f);
+        FormBorderStyle = FormBorderStyle.None;
+        ShowInTaskbar = false;
+        StartPosition = FormStartPosition.Manual;
+        ClientSize = new Size(158, 34);
+        BackColor = Color.FromArgb(17, 24, 39);
+        Opacity = Dim;
+        DoubleBuffered = true;
+        Pin();
+        Microsoft.Win32.SystemEvents.DisplaySettingsChanged += delegate { Pin(); };
+
+        var menu = new ContextMenuStrip();
+        ((ToolStripMenuItem)menu.Items.Add("Flush now", null, delegate { TryFlush(); })).ShortcutKeyDisplayString = "Ctrl+Alt+F";
+        menu.Items.Add("Memory breakdown", null, delegate { MessageBox.Show(Mem.Breakdown(), "NJ-Flush: where the RAM is"); });
+        menu.Items.Add(new ToolStripSeparator());
+        var settings = new ToolStripMenuItem("Settings");
+        Action<string, Func<bool>, Action<bool>> toggle = (text, get, set) => {
+            var item = new ToolStripMenuItem(text) { CheckOnClick = true, Checked = get() };
+            item.CheckedChanged += delegate { set(item.Checked); Settings.Save(); };
+            settings.DropDownItems.Add(item);
+        };
+        toggle("Animation", () => Settings.Animation, v => Settings.Animation = v);
+        toggle("Sound", () => Settings.Sound, v => Settings.Sound = v);
+        toggle("Restart File Explorer on flush", () => Settings.RestartExplorer, v => Settings.RestartExplorer = v);
+        toggle("Auto-flush at " + Settings.AutoAt + "% RAM", () => Settings.AutoFlush, v => Settings.AutoFlush = v);
+        toggle("Start with Windows", Settings.Autostart, Settings.SetAutostart);
+        menu.Items.Add(settings);
+        var preview = new ToolStripMenuItem("Preview animations");
+        foreach (string t in new[] { "light", "medium", "heavy", "clogged" }) {
+            string tier = t;
+            preview.DropDownItems.Add(char.ToUpper(t[0]) + t.Substring(1), null, delegate {
+                Process.Start(new ProcessStartInfo(Assembly.GetExecutingAssembly().Location, "/preview " + tier) { UseShellExecute = false });
+            });
+        }
+        menu.Items.Add(preview);
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("Uninstall NJ-Flush...", null, delegate {
+            if (MessageBox.Show("Remove NJ-Flush from this PC?\n\nThe task, the autostart entry, the settings and the installed copy are removed.",
+                                "NJ-Flush", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK) { App.Uninstall(); Close(); }
+        });
+        menu.Items.Add("Close", null, delegate { Close(); });
+        ContextMenuStrip = menu;
+        tip = new ToolTip { InitialDelay = 400 };
+        MouseEnter += delegate {
+            Opacity = Lit;
+            tip.SetToolTip(this, string.Format("Free {0:0.00} GB\nLast flush: {1}\nDouble-click or Ctrl+Alt+F to flush", m.avail / 1073741824.0, Settings.Last()));
+        };
+        MouseLeave += delegate { Opacity = Dim; };
+        DoubleClick += delegate { TryFlush(); };
+
+        var timer = new System.Windows.Forms.Timer { Interval = 1000 };
+        timer.Tick += delegate { Sample(); };
+        timer.Start();
+        Sample();
+    }
+
+    // tool window (no taskbar / Alt+Tab), never takes focus
+    protected override CreateParams CreateParams {
+        get { CreateParams p = base.CreateParams; p.ExStyle |= 0x80 | 0x08000000; return p; }
+    }
+    protected override bool ShowWithoutActivation { get { return true; } }
+
+    [DllImport("user32.dll")] static extern bool RegisterHotKey(IntPtr h, int id, uint mods, uint vk);
+    [DllImport("user32.dll")] static extern bool UnregisterHotKey(IntPtr h, int id);
+
+    protected override void OnHandleCreated(EventArgs e) {
+        base.OnHandleCreated(e);
+        int round = 2; DwmSetWindowAttribute(Handle, 33, ref round, 4);  // Win11 rounded corners
+        RegisterHotKey(Handle, 1, 0x1 | 0x2 | 0x4000, (uint)Keys.F);       // Ctrl+Alt+F, no auto-repeat; taken by another app = silently off
+    }
+    protected override void OnHandleDestroyed(EventArgs e) { UnregisterHotKey(Handle, 1); base.OnHandleDestroyed(e); }
+
+    protected override void OnShown(EventArgs e) {
+        base.OnShown(e);
+        GC.Collect();
+        EmptyWorkingSet(Process.GetCurrentProcess().Handle);  // start lean
+    }
+
+    // WM_WINDOWPOSCHANGING: always insert at HWND_BOTTOM, so it sits on the desktop under every window
+    protected override void WndProc(ref Message msg) {
+        if (msg.Msg == 0x46) {
+            var wp = (WindowPos)Marshal.PtrToStructure(msg.LParam, typeof(WindowPos));
+            wp.after = new IntPtr(1);
+            wp.flags &= ~0x4u;  // clear SWP_NOZORDER
+            Marshal.StructureToPtr(wp, msg.LParam, false);
+        }
+        if (msg.Msg == 0x312 && msg.WParam.ToInt32() == 1) TryFlush();  // WM_HOTKEY
+        base.WndProc(ref msg);
+    }
+
+    // fixed spot on the main monitor: right edge, just above the taskbar clock
+    void Pin() {
+        Rectangle wa = Screen.PrimaryScreen.WorkingArea;
+        Location = new Point(wa.Right - Width - 8, wa.Bottom - Height - 6);
+    }
+
+    ToolTip tip;
+    // during the cooldown a flush request explains itself instead of doing nothing silently
+    void TryFlush() {
+        int left = Settings.CooldownLeft();
+        if (left > 0) { tip.Show(string.Format("Just flushed. Next flush in {0} s.", left), this, 0, -44, 2000); return; }
+        App.FlushNow();
+    }
+
+    bool commitTight;
+    int highFor; DateTime lastAuto = DateTime.MinValue;
+    void Sample() {
+        if (!Mem.Status(ref m)) return;
+        double total = m.total / 1073741824.0, used = (m.total - m.avail) / 1073741824.0;
+        // auto-flush: RAM at or above the threshold for 30 s in a row, at most once per 10 minutes
+        highFor = used / total * 100 >= Settings.AutoAt ? highFor + 1 : 0;
+        if (Settings.AutoFlush && highFor >= 30 && (DateTime.Now - lastAuto).TotalMinutes >= 10) { lastAuto = DateTime.Now; highFor = 0; App.FlushNow(); }
+        string p = string.Format("{0:0}%", used / total * 100), g = Settings.CooldownLeft() > 0 ? string.Format("next flush {0}s", Settings.CooldownLeft()) : string.Format("{0:0.00}/{1:0.00} GB", used, total);
+        bool tight = m.tPage > 0 && (m.tPage - m.aPage) / (double)m.tPage >= 0.9;  // reserved memory near its limit (2026-11-23)
+        if (p == pctText && g == gbText && tight == commitTight) return;  // repaint only on change
+        pct = (float)(used / total); pctText = p; gbText = g; commitTight = tight;
+        Invalidate();
+    }
+
+    protected override void OnPaint(PaintEventArgs e) {
+        Graphics gr = e.Graphics;
+        gr.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+        gr.DrawString(pctText, big, fg, 8, 5);
+        SizeF s = gr.MeasureString(gbText, small);
+        gr.DrawString(gbText, small, fg, ClientSize.Width - s.Width - 6, 8);
+        int w = ClientSize.Width - 16;
+        gr.FillRectangle(track, 8, 27, w, 3);
+        // bar colour = the flush tier it would play: cyan, yellow, orange, red (commit near its limit counts as orange)
+        SolidBrush bar = pct >= 0.96f ? red : pct >= 0.9f || commitTight ? hot : pct >= 0.8f ? warm : ok;
+        gr.FillRectangle(bar, 8, 27, (int)(w * pct), 3);
+    }
+}

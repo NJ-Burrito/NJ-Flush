@@ -139,7 +139,8 @@ static class App {
         }
     }
 
-    public static void FlushNow() { if (Settings.CooldownLeft() == 0) Run("schtasks.exe", "/run /tn " + TaskName, null); }
+    // never on the caller's thread: under full RAM starting schtasks takes seconds, and the widget froze on the double-click (1.2.1)
+    public static void FlushNow() { if (Settings.CooldownLeft() == 0) new Thread(() => Run("schtasks.exe", "/run /tn " + TaskName, null)) { IsBackground = true }.Start(); }
 
     // removes the task (one elevated call), the autostart entry and, after this process exits, the install folder
     public static void Uninstall() {
@@ -270,7 +271,29 @@ static class Mem {
 
     static void Privileges() { bool was; RtlAdjustPrivilege(13, true, false, out was); RtlAdjustPrivilege(5, true, false, out was); }
 
-    public static string Flush() {
+    [DllImport("kernel32.dll")] static extern bool SetProcessWorkingSetSizeEx(IntPtr h, IntPtr min, IntPtr max, uint flags);
+    [DllImport("kernel32.dll")] static extern bool GetProcessWorkingSetSizeEx(IntPtr h, out IntPtr min, out IntPtr max, out uint flags);
+
+    // 1.2.1: keep this process resident during "empty all working sets": the animation and its sound otherwise page back in from
+    // disk frame by frame on a full machine. Best effort (needs SeIncreaseWorkingSetPrivilege, which the elevated task has).
+    static Action PinSelf() {
+        try {
+            bool was; RtlAdjustPrivilege(33, true, false, out was);
+            var me = Process.GetCurrentProcess(); me.Refresh();
+            IntPtr min0, max0; uint f0;
+            if (!GetProcessWorkingSetSizeEx(me.Handle, out min0, out max0, out f0)) return () => { };
+            long min = me.WorkingSet64 + (32L << 20), max = Math.Max(min * 2, max0.ToInt64());
+            if (!SetProcessWorkingSetSizeEx(me.Handle, new IntPtr(min), new IntPtr(max), 0x1 | 0x8)) return () => { };  // HARDWS_MIN_ENABLE | HARDWS_MAX_DISABLE
+            return () => { try { SetProcessWorkingSetSizeEx(me.Handle, min0, max0, 0x2 | 0x8); } catch (Exception) { } };  // MIN_DISABLE
+        } catch (Exception) { return () => { }; }
+    }
+
+    public static string Flush(bool keepSelf = false) {
+        Action unpin = keepSelf ? PinSelf() : () => { };
+        try { return FlushCore(); } finally { unpin(); }
+    }
+
+    static string FlushCore() {
         double before = UsedGB();
         int leftovers = Orphans.Reap();  // 2026-11-23: leftover helper processes first (their page tables and RAM come back)
         if (Settings.RestartExplorer) RestartExplorer();
@@ -562,8 +585,7 @@ static class Overlay {
             tier = i >= 0 ? i : 1; pct = PreviewPct[tier];
             result = "Preview: nothing was flushed";
         } else {
-            work = new Thread(() => { result = Mem.Flush(); }) { IsBackground = true };
-            work.Start();
+            work = new Thread(() => { result = Mem.Flush(keepSelf: true); }) { IsBackground = true, Priority = ThreadPriority.BelowNormal };
         }
 
         var win = (W.Window)W.Markup.XamlReader.Parse(Xaml);
@@ -733,8 +755,14 @@ static class Overlay {
                 stage = 2;
             }
         };
-        win.Loaded += delegate {
+        bool started = false;
+        Action startWork = () => { if (work != null && !started) { started = true; work.Start(); } };
+        // 1.2.1: the clock and the sound start when the first frame is on screen (Loaded fired before it, so a slow first paint
+        // under full RAM skipped frames while the sound ran ahead); the flush starts 250 ms later, after the overlay is up, because
+        // started first it emptied every working set (this one included) and purged the file cache while WPF was still loading
+        win.ContentRendered += delegate {
             clock.Start(); timer.Start();
+            if (work != null) { var go = new W.Threading.DispatcherTimer { Interval = Ms(250) }; go.Tick += delegate { go.Stop(); startWork(); }; go.Start(); }
             if (sound != null) {               // one soundtrack per tier, cued to this clock, at the user's volume
                 uint v = (uint)(Settings.Volume * 0xFFFF / 100); waveOutSetVolume(IntPtr.Zero, v | (v << 16));
                 sound.Play();
@@ -747,6 +775,7 @@ static class Overlay {
         win.KeyDown += (s, e) => { if (e.Key == W.Input.Key.Escape) win.Close(); };
         win.ShowDialog();
         timer.Stop(); if (sound != null) sound.Stop();
+        startWork();  // closed before it started (a click on the overlay): the flush still runs
         if (work != null) work.Join(20000);  // let the flush finish before the widget starts
     }
 }
@@ -889,8 +918,12 @@ class Widget : Form {
     void TryFlush() {
         int left = Settings.CooldownLeft();
         if (left > 0) { tip.Show(string.Format("Just flushed. Next flush in {0} s.", left), this, 0, -44, 2000); return; }
+        if ((DateTime.Now - lastTry).TotalSeconds < 3) return;  // a second double-click while the first is still starting
+        lastTry = DateTime.Now;
+        tip.Show("Flushing...", this, 0, -44, 1500);  // answers at once; the overlay follows when Windows starts the task
         App.FlushNow();
     }
+    DateTime lastTry = DateTime.MinValue;
 
     bool commitTight;
     int highFor; DateTime lastAuto = DateTime.MinValue;
@@ -1200,7 +1233,7 @@ static class BreakdownWindow {
 // Updates (Nader 2026-11-23, "like my other tools"): reads the latest GitHub release, compares it with this version, and on request
 // downloads NJ-Flush.exe over HTTPS, checks its SHA-256 against the digest GitHub publishes, swaps it in and restarts the widget.
 static class Updater {
-    public const string Version = "1.2.0", Repo = "NJ-Burrito/NJ-Flush";
+    public const string Version = "1.2.1", Repo = "NJ-Burrito/NJ-Flush";
     public class Info { public string Tag, Url, Sha, Error; public bool Newer; }
 
     static string Get(string url) {

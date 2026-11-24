@@ -1,0 +1,14 @@
+name: tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Unit tests (leftover rule, settings, cooldown, tiers, updater)
+        run: dotnet test tests/NJFlush.Tests --nologo

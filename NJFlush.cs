@@ -27,6 +27,8 @@ using W = System.Windows;
 using WM = System.Windows.Media;
 using WA = System.Windows.Media.Animation;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("NJFlush.Tests")]  // tests/NJFlush.Tests only
+
 static class App {
     public static readonly string Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NJ-Flush");
     public static readonly string Exe = Path.Combine(Dir, "NJ-Flush.exe");
@@ -161,8 +163,11 @@ static class Settings {
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
     public static void Load() {
-        try {
-            foreach (string line in File.ReadAllLines(File_)) {
+        try { Parse(File.ReadAllLines(File_)); } catch (Exception) { }  // no file yet: defaults
+    }
+    // settings.ini lines; an unknown key or an out-of-range number keeps the current value (tests: tests/NJFlush.Tests)
+    public static void Parse(System.Collections.Generic.IEnumerable<string> lines) {
+            foreach (string line in lines) {
                 int i = line.IndexOf('='); if (i < 0) continue;
                 string k = line.Substring(0, i).Trim().ToLowerInvariant(), v = line.Substring(i + 1).Trim();
                 bool b = v == "1" || v.ToLowerInvariant() == "true"; int n;
@@ -175,7 +180,6 @@ static class Settings {
                 else if (k == "volume" && int.TryParse(v, out n) && n >= 0 && n <= 100) Volume = n;
                 else if (k == "idleopacity" && int.TryParse(v, out n) && n >= 20 && n <= 100) IdleOpacity = n;
             }
-        } catch (Exception) { }  // no file yet: defaults
     }
     public static void Save() {
         try {
@@ -200,10 +204,11 @@ static class Settings {
     static readonly string StartFile = Path.Combine(App.Dir, "flush.at");
     public static void MarkFlush() { try { Directory.CreateDirectory(App.Dir); File.WriteAllText(StartFile, DateTime.Now.Ticks.ToString()); } catch (Exception) { } }
     public static int CooldownLeft() {
-        try {
-            double since = (DateTime.Now - new DateTime(long.Parse(File.ReadAllText(StartFile).Trim()))).TotalSeconds;
-            return since < 0 ? 0 : Math.Max(0, (int)Math.Ceiling(Cooldown - since));  // clock moved back: do not lock
-        } catch (Exception) { return 0; }
+        try { return CooldownLeft(long.Parse(File.ReadAllText(StartFile).Trim()), DateTime.Now, Cooldown); } catch (Exception) { return 0; }
+    }
+    public static int CooldownLeft(long startTicks, DateTime now, int cooldown) {
+        double since = (now - new DateTime(startTicks)).TotalSeconds;
+        return since < 0 ? 0 : Math.Max(0, (int)Math.Ceiling(cooldown - since));  // clock moved back: do not lock
     }
 }
 
@@ -224,12 +229,8 @@ static class Orphans {
         var kids = rows.GroupBy(o => (uint)o["ParentProcessId"]).ToDictionary(g => g.Key, g => g.Select(o => (uint)o["ProcessId"]).ToList());
         var found = new System.Collections.Generic.List<int>();
         foreach (var o in rows) {
-            string name = ((string)o["Name"] ?? "").ToLowerInvariant(), cmd = (string)o["CommandLine"] ?? "";
-            if (name != "node.exe" && name != "cmd.exe") continue;
-            if (live.Contains((uint)o["ParentProcessId"])) continue;
-            string cd = (string)o["CreationDate"]; if (cd == null) continue;
-            if ((DateTime.Now - ManagementDateTimeConverter.ToDateTime(cd)).TotalHours < MinAgeHours) continue;
-            if (!Helpers.Any(h => cmd.IndexOf(h, StringComparison.OrdinalIgnoreCase) >= 0)) continue;
+            string cd = (string)o["CreationDate"];
+            if (!IsLeftover((string)o["Name"], live.Contains((uint)o["ParentProcessId"]), cd == null ? (DateTime?)null : ManagementDateTimeConverter.ToDateTime(cd), DateTime.Now, (string)o["CommandLine"])) continue;
             var stack = new System.Collections.Generic.Stack<uint>(); stack.Push((uint)o["ProcessId"]);
             while (stack.Count > 0) {
                 uint id = stack.Pop(); if (found.Contains((int)id)) continue; found.Add((int)id);
@@ -237,6 +238,15 @@ static class Orphans {
             }
         }
         return found;
+    }
+
+    // the whole rule for a leftover root (anything else is never stopped): node/cmd, parent gone, older than 6 h, a known helper
+    public static bool IsLeftover(string name, bool parentAlive, DateTime? created, DateTime now, string cmd) {
+        name = (name ?? "").ToLowerInvariant(); cmd = cmd ?? "";
+        if (name != "node.exe" && name != "cmd.exe") return false;
+        if (parentAlive || created == null) return false;
+        if ((now - created.Value).TotalHours < MinAgeHours) return false;
+        return Helpers.Any(h => cmd.IndexOf(h, StringComparison.OrdinalIgnoreCase) >= 0);
     }
 
     public static int Reap() {
@@ -1251,16 +1261,28 @@ static class Updater {
     public static Info Check() {
         var i = new Info();
         try {
-            string json = Get("https://api.github.com/repos/" + Repo + "/releases/latest");
+            return Parse(Get("https://api.github.com/repos/" + Repo + "/releases/latest"), Version);
+        } catch (Exception e) { i.Error = "Could not reach GitHub (" + e.Message + ")."; }
+        return i;
+    }
+
+    // a release reply -> tag, exe URL, its SHA-256 (from GitHub's digest) and whether it is newer than `current`
+    public static Info Parse(string json, string current) {
+        var i = new Info();
+        try {
             var tag = System.Text.RegularExpressions.Regex.Match(json, "\"tag_name\"\\s*:\\s*\"([^\"]+)\"");
             var asset = System.Text.RegularExpressions.Regex.Match(json, "\"name\"\\s*:\\s*\"NJ-Flush\\.exe\"[\\s\\S]*?\"browser_download_url\"\\s*:\\s*\"([^\"]+)\"");
             if (!tag.Success || !asset.Success) { i.Error = "The latest release has no NJ-Flush.exe."; return i; }
             i.Tag = tag.Groups[1].Value; i.Url = asset.Groups[1].Value;
             var sha = System.Text.RegularExpressions.Regex.Match(asset.Value, "\"digest\"\\s*:\\s*\"sha256:([0-9a-fA-F]{64})\"");
             if (sha.Success) i.Sha = sha.Groups[1].Value.ToLowerInvariant();
-            i.Newer = new Version(i.Tag.TrimStart('v', 'V')) > new Version(Version);
-        } catch (Exception e) { i.Error = "Could not reach GitHub (" + e.Message + ")."; }
+            i.Newer = new Version(i.Tag.TrimStart('v', 'V')) > new Version(current);
+        } catch (Exception e) { i.Error = "The release could not be read (" + e.Message + ")."; }
         return i;
+    }
+    public static bool ShaMatches(byte[] data, string sha) {
+        if (data == null || sha == null || data.Length < 2 || data[0] != 'M' || data[1] != 'Z') return false;
+        using (var h = System.Security.Cryptography.SHA256.Create()) return BitConverter.ToString(h.ComputeHash(data)).Replace("-", "").ToLowerInvariant() == sha;
     }
 
     // returns null when the new version is in place and the widget restart is queued; otherwise the reason it stopped
@@ -1272,10 +1294,7 @@ static class Updater {
             Directory.CreateDirectory(App.Dir);
             System.Net.ServicePointManager.SecurityProtocol |= (System.Net.SecurityProtocolType)3072;
             using (var wc = new System.Net.WebClient()) { wc.Headers.Add("User-Agent", "NJ-Flush/" + Version); wc.DownloadFile(i.Url, tmp); }
-            byte[] data = File.ReadAllBytes(tmp);
-            string got;
-            using (var h = System.Security.Cryptography.SHA256.Create()) got = BitConverter.ToString(h.ComputeHash(data)).Replace("-", "").ToLowerInvariant();
-            if (got != i.Sha || data.Length < 2 || data[0] != 'M' || data[1] != 'Z') { File.Delete(tmp); return "The download did not match its checksum, so it was not installed."; }
+            if (!ShaMatches(File.ReadAllBytes(tmp), i.Sha)) { File.Delete(tmp); return "The download did not match its checksum, so it was not installed."; }
             string old = App.Exe + ".old";
             try { File.Delete(old); } catch (Exception) { }
             if (File.Exists(App.Exe)) File.Move(App.Exe, old);  // a running exe can be renamed, not overwritten

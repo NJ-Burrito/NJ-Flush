@@ -85,6 +85,7 @@ build.cmd                     REM -> dist\NJ-Flush.exe (C# 5, csc.exe from the F
 | `make_logo.ps1`, `make_icon.py` | render the logo from vector art, then the `.ico` (Pillow) |
 | `make_sfx.py` | mixes `flush-<tier>.wav` from the source recordings on the animation's cue times (needs ffmpeg) |
 | `docs/` | the website (GitHub Pages) and the README images |
+| `tests/NJFlush.Tests` | unit tests of the decisions: which leftover processes may be stopped, settings ranges, the cooldown, the flush tier, the updater's checksum rule (`dotnet test tests/NJFlush.Tests`, .NET 10 SDK; `NJFlush.csproj` exists only for them) |
 
 **Sounds:** real recordings from [Mixkit](https://mixkit.co) under the Mixkit Sound Effects Free License. The mixed
 `flush-*.wav` tracks are in the repo; the raw recordings are not (the licence does not allow sharing them on their

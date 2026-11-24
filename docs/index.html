@@ -3,11 +3,92 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NJ-Flush</title>
-<meta name="description" content="Free Windows RAM with one double-click. A toilet flushes on screen, harder the fuller your RAM is.">
-<meta property="og:title" content="NJ-Flush">
-<meta property="og:description" content="Free Windows RAM with one double-click, and watch it flush.">
-<meta property="og:image" content="logo-1024.png">
+<title>NJ-Flush: free Windows RAM cleaner with one double-click</title>
+<meta name="description" content="NJ-Flush is a free, open-source Windows RAM cleaner by Nader Alzghoul (NJ-Burrito). One double-click frees memory while a toilet flushes on screen.">
+<meta name="author" content="Nader Alzghoul (NJ-Burrito)">
+<link rel="canonical" href="https://nj-burrito.github.io/NJ-Flush/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="NJ-Burrito">
+<meta property="og:title" content="NJ-Flush: free Windows RAM cleaner with one double-click">
+<meta property="og:description" content="NJ-Flush is a free, open-source Windows RAM cleaner by Nader Alzghoul (NJ-Burrito). One double-click frees memory while a toilet flushes on screen.">
+<meta property="og:url" content="https://nj-burrito.github.io/NJ-Flush/">
+<meta property="og:image" content="https://nj-burrito.github.io/NJ-Flush/logo-1024.png">
+<meta property="og:image:alt" content="NJ-Flush logo">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ar_JO">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="NJ-Flush: free Windows RAM cleaner with one double-click">
+<meta name="twitter:description" content="NJ-Flush is a free, open-source Windows RAM cleaner by Nader Alzghoul (NJ-Burrito). One double-click frees memory while a toilet flushes on screen.">
+<meta name="twitter:image" content="https://nj-burrito.github.io/NJ-Flush/logo-1024.png">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://nj-burrito.github.io/NJ-Flush/#app",
+   "name": "NJ-Flush",
+   "alternateName": [
+    "NJ Flush",
+    "nj-flush",
+    "nj_flush",
+    "NJ_Flush",
+    "NJFlush",
+    "نج فلش"
+   ],
+   "description": "NJ-Flush is a free, open-source Windows RAM cleaner by Nader Alzghoul (NJ-Burrito). One double-click frees memory while a toilet flushes on screen.",
+   "url": "https://nj-burrito.github.io/NJ-Flush/",
+   "downloadUrl": "https://github.com/NJ-Burrito/NJ-Flush/releases/latest",
+   "codeRepository": "https://github.com/NJ-Burrito/NJ-Flush",
+   "applicationCategory": "UtilitiesApplication",
+   "operatingSystem": "Windows 10, Windows 11",
+   "image": "https://nj-burrito.github.io/NJ-Flush/logo-1024.png",
+   "license": "https://opensource.org/licenses/MIT",
+   "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+   },
+   "author": {
+    "@id": "https://nj-burrito.github.io/#person"
+   },
+   "inLanguage": [
+    "en",
+    "ar"
+   ]
+  },
+  {
+   "@type": "Person",
+   "@id": "https://nj-burrito.github.io/#person",
+   "name": "Nader Alzghoul",
+   "alternateName": [
+    "نادر الزغول",
+    "NJ-Burrito",
+    "NJ Burrito",
+    "NJBurrito",
+    "NJ"
+   ],
+   "jobTitle": "QA Automation Engineer",
+   "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Amman",
+    "addressCountry": "JO"
+   },
+   "url": "https://nj-burrito.github.io/",
+   "sameAs": [
+    "https://github.com/NJ-Burrito",
+    "https://nj-burrito.github.io/QA-Wrap/",
+    "https://nj-burrito.github.io/Business-Wrap/",
+    "https://nj-burrito.github.io/NJ-Kit/",
+    "https://nj-burrito.github.io/NJ-Whip/",
+    "https://nj-burrito.github.io/Profile-Wrap/",
+    "https://github.com/NJ-Burrito/Story-Wrap",
+    "https://nj-burrito.github.io/NJ-Flush/"
+   ]
+  }
+ ]
+}
+</script>
 <link rel="icon" href="logo.png">
 <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
 <style>
@@ -122,12 +203,15 @@
     .steps { grid-template-columns: 1fr; }
     .nav-links a:not(.btn) { display: none; }
   }
+  footer .seo { flex-basis: 100%; display: grid; gap: 8px; }
+  footer .seo a { color: inherit; }
+  h1 .kicker { display: block; font-size: .32em; letter-spacing: .02em; color: var(--accent); margin-bottom: 10px; }
 </style>
 </head>
 <body>
 <header class="wrap">
   <nav>
-    <a class="brand" href="#"><img src="logo.png" alt="">NJ-Flush</a>
+    <a class="brand" href="#"><img src="logo.png" alt="NJ-Flush logo">NJ-Flush</a>
     <div class="nav-links">
       <a href="#tiers">How it flushes</a>
       <a href="#features">Features</a>
@@ -140,7 +224,7 @@
 <main>
   <section class="wrap hero" style="padding-top:40px">
     <div>
-      <h1>Your RAM is full. <em>Flush it.</em></h1>
+      <h1><span class="kicker">NJ-Flush, the free Windows RAM cleaner</span>Your RAM is full. <em>Flush it.</em></h1>
       <p class="lede">One double-click hands memory back to Windows, while a toilet flushes on your screen.</p>
       <div class="ctas">
         <a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><i class="ph ph-download-simple"></i>Download</a>
@@ -215,6 +299,11 @@
   <div class="wrap">
     <span>NJ-Flush by Nader Alzghoul. MIT licence.</span>
     <span>Sound effects from <a href="https://mixkit.co">Mixkit</a>.</span>
+    <div class="seo">
+      <span>Also known as NJ Flush, nj-flush, nj_flush. Made by Nader Alzghoul (نادر الزغول), GitHub <a href="https://github.com/NJ-Burrito">NJ-Burrito</a>.</span>
+      <span>More by NJ-Burrito: <a href="https://nj-burrito.github.io/">Nader Alzghoul's portfolio</a> · <a href="https://nj-burrito.github.io/QA-Wrap/">QA-Wrap</a> · <a href="https://nj-burrito.github.io/Business-Wrap/">Business-Wrap</a> · <a href="https://nj-burrito.github.io/NJ-Kit/">NJ-Kit</a> · <a href="https://nj-burrito.github.io/NJ-Whip/">NJ-Whip</a> · <a href="https://nj-burrito.github.io/Profile-Wrap/">Profile-Wrap</a> · <a href="https://github.com/NJ-Burrito/Story-Wrap">Story-Wrap (repo)</a></span>
+      <p lang="ar" dir="rtl">NJ-Flush أداة مجانية مفتوحة المصدر لتفريغ ذاكرة RAM في ويندوز بنقرة مزدوجة واحدة، من تطوير نادر الزغول (NJ-Burrito)، مهندس أتمتة اختبارات الجودة في عمّان، الأردن.</p>
+    </div>
   </div>
 </footer>
 

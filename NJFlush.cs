@@ -357,26 +357,28 @@ static class Mem {
 // sound sits on its cue. Change a cue time here -> change it in make_sfx.py.
 // Windows "Show animations" off -> no motion, the tier and the result still show (reduced motion keeps the feedback).
 static class Overlay {
+    public static int FPS = 30;
     public static bool Solid;  // opaque backdrop: screen recordings never show the desktop behind
     [DllImport("winmm.dll")] static extern int waveOutSetVolume(IntPtr device, uint volume);  // this process's volume (SoundPlayer)
     const string Xaml = @"
 <Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
         WindowStyle='None' AllowsTransparency='True' Background='Transparent' Topmost='True' ShowInTaskbar='False'
-        WindowState='Maximized' ResizeMode='NoResize'>
+        SizeToContent='WidthAndHeight' WindowStartupLocation='CenterScreen' ResizeMode='NoResize'>
+  <!-- 1.2.2 (Nader: super light): the window is only as big as the art, not a full-screen layered window, and nothing is blurred
+       (a DropShadowEffect on the animated canvas was re-blurred every frame). Solid (recording) mode is still full screen. -->
   <Grid x:Name='Root' Opacity='0'>
     <!-- Nader 2026-11-23: a lighter dim (not a blackout), no glow behind the toilet; solid (recording) mode = opaque + glow -->
-    <Rectangle x:Name='Dim' Fill='#05080F' Opacity='0.45'/>
-    <Ellipse x:Name='GlowDisc' Width='1100' Height='1100' IsHitTestVisible='False' Opacity='0'>
+    <Rectangle x:Name='Dim' Fill='#05080F' Opacity='0.45' Visibility='Collapsed'/>
+    <Ellipse x:Name='GlowDisc' Width='1100' Height='1100' IsHitTestVisible='False' Opacity='0' Visibility='Collapsed'>
       <Ellipse.Fill><RadialGradientBrush>
         <GradientStop x:Name='Glow' Color='#3322D3EE' Offset='0'/><GradientStop Color='#0022D3EE' Offset='1'/>
       </RadialGradientBrush></Ellipse.Fill>
     </Ellipse>
-    <StackPanel VerticalAlignment='Center' HorizontalAlignment='Center'>
+    <StackPanel VerticalAlignment='Center' HorizontalAlignment='Center' Margin='40'>
       <Viewbox Height='460' RenderTransformOrigin='0.5,0.5'>
         <Viewbox.RenderTransform><ScaleTransform x:Name='Pop' ScaleX='0.6' ScaleY='0.6'/></Viewbox.RenderTransform>
         <Canvas Width='300' Height='440'>
           <Canvas.RenderTransform><TranslateTransform x:Name='Shake'/></Canvas.RenderTransform>
-          <Canvas.Effect><DropShadowEffect BlurRadius='46' ShadowDepth='12' Direction='270' Opacity='0.8' Color='#000000'/></Canvas.Effect>
           <Canvas.Resources>
             <LinearGradientBrush x:Key='Porcelain' StartPoint='0,0.5' EndPoint='1,0.5'>
               <GradientStop Color='#B9C6D1' Offset='0'/><GradientStop Color='#F8FAFC' Offset='0.32'/>
@@ -389,25 +391,24 @@ static class Overlay {
           </Canvas.Resources>
 
           <!-- floor shadow, pedestal -->
-          <Ellipse Canvas.Left='30' Canvas.Top='398' Width='240' Height='34'>
+          <Ellipse CacheMode='BitmapCache' Canvas.Left='30' Canvas.Top='398' Width='240' Height='34'>
             <Ellipse.Fill><RadialGradientBrush><GradientStop Color='#99000000' Offset='0'/><GradientStop Color='#00000000' Offset='1'/></RadialGradientBrush></Ellipse.Fill>
           </Ellipse>
-          <Path Data='M92,320 C100,365 92,392 78,412 L222,412 C208,392 200,365 208,320 Z' Fill='{StaticResource Porcelain}'/>
-          <Rectangle Canvas.Left='76' Canvas.Top='406' Width='148' Height='8' RadiusX='4' RadiusY='4' Fill='#8A99A6'/>
+          <Path CacheMode='BitmapCache' Data='M92,320 C100,365 92,392 78,412 L222,412 C208,392 200,365 208,320 Z' Fill='{StaticResource Porcelain}'/>
+          <Rectangle CacheMode='BitmapCache' Canvas.Left='76' Canvas.Top='406' Width='148' Height='8' RadiusX='4' RadiusY='4' Fill='#8A99A6'/>
 
           <!-- tank and lid -->
-          <Rectangle Canvas.Left='46' Canvas.Top='16' Width='208' Height='96' RadiusX='18' RadiusY='18' Fill='{StaticResource Porcelain}'/>
-          <Rectangle Canvas.Left='56' Canvas.Top='104' Width='188' Height='10' RadiusX='5' RadiusY='5' Fill='#7C8B98' Opacity='0.45'/>
-          <Rectangle Canvas.Left='36' Canvas.Top='4' Width='228' Height='24' RadiusX='12' RadiusY='12'>
+          <Rectangle CacheMode='BitmapCache' Canvas.Left='46' Canvas.Top='16' Width='208' Height='96' RadiusX='18' RadiusY='18' Fill='{StaticResource Porcelain}'/>
+          <Rectangle CacheMode='BitmapCache' Canvas.Left='56' Canvas.Top='104' Width='188' Height='10' RadiusX='5' RadiusY='5' Fill='#7C8B98' Opacity='0.45'/>
+          <Rectangle CacheMode='BitmapCache' Canvas.Left='36' Canvas.Top='4' Width='228' Height='24' RadiusX='12' RadiusY='12'>
             <Rectangle.Fill><LinearGradientBrush StartPoint='0.5,0' EndPoint='0.5,1'>
               <GradientStop Color='#FFFFFF' Offset='0'/><GradientStop Color='#E8EEF2' Offset='0.6'/><GradientStop Color='#B3C0CB' Offset='1'/>
             </LinearGradientBrush></Rectangle.Fill>
           </Rectangle>
-          <Rectangle Canvas.Left='54' Canvas.Top='8' Width='192' Height='3' RadiusX='1.5' RadiusY='1.5' Fill='White' Opacity='0.95'/>
+          <Rectangle CacheMode='BitmapCache' Canvas.Left='54' Canvas.Top='8' Width='192' Height='3' RadiusX='1.5' RadiusY='1.5' Fill='White' Opacity='0.95'/>
 
           <!-- chrome flush button -->
           <Ellipse Canvas.Left='122' Canvas.Top='38' Width='56' Height='56' Fill='{StaticResource Chrome}'>
-            <Ellipse.Effect><DropShadowEffect BlurRadius='6' ShadowDepth='2' Direction='270' Opacity='0.35'/></Ellipse.Effect>
           </Ellipse>
           <Canvas>
             <Canvas.RenderTransform><ScaleTransform x:Name='BtnScale' CenterX='150' CenterY='66'/></Canvas.RenderTransform>
@@ -420,18 +421,17 @@ static class Overlay {
           </Canvas>
 
           <!-- bowl, seat, inner wall -->
-          <Ellipse Canvas.Left='20' Canvas.Top='112' Width='260' Height='300'>
+          <Ellipse CacheMode='BitmapCache' Canvas.Left='20' Canvas.Top='112' Width='260' Height='300'>
             <Ellipse.Fill><RadialGradientBrush GradientOrigin='0.35,0.28' Center='0.45,0.4' RadiusX='0.68' RadiusY='0.68'>
               <GradientStop Color='#FFFFFF' Offset='0'/><GradientStop Color='#F1F5F9' Offset='0.5'/><GradientStop Color='#A9B7C3' Offset='1'/>
             </RadialGradientBrush></Ellipse.Fill>
-            <Ellipse.Effect><DropShadowEffect BlurRadius='28' ShadowDepth='8' Direction='270' Opacity='0.45'/></Ellipse.Effect>
           </Ellipse>
-          <Ellipse Canvas.Left='33' Canvas.Top='124' Width='234' Height='276' StrokeThickness='15'>
+          <Ellipse CacheMode='BitmapCache' Canvas.Left='33' Canvas.Top='124' Width='234' Height='276' StrokeThickness='15'>
             <Ellipse.Stroke><LinearGradientBrush StartPoint='0.2,0' EndPoint='0.8,1'>
               <GradientStop Color='#FFFFFF' Offset='0'/><GradientStop Color='#E2E8F0' Offset='0.5'/><GradientStop Color='#B6C3CE' Offset='1'/>
             </LinearGradientBrush></Ellipse.Stroke>
           </Ellipse>
-          <Ellipse Canvas.Left='52' Canvas.Top='142' Width='196' Height='244'>
+          <Ellipse CacheMode='BitmapCache' Canvas.Left='52' Canvas.Top='142' Width='196' Height='244'>
             <Ellipse.Fill><LinearGradientBrush StartPoint='0.5,0' EndPoint='0.5,1'>
               <GradientStop Color='#7E93A3' Offset='0'/><GradientStop Color='#C8D3DC' Offset='0.35'/><GradientStop Color='#EEF3F6' Offset='1'/>
             </LinearGradientBrush></Ellipse.Fill>
@@ -506,14 +506,14 @@ static class Overlay {
         </Canvas>
       </Viewbox>
       <Border x:Name='Pill' HorizontalAlignment='Center' Margin='0,22,0,0' Padding='16,5' CornerRadius='15' BorderThickness='1'>
-        <Border.Effect><DropShadowEffect BlurRadius='14' ShadowDepth='3' Direction='270' Opacity='0.6'/></Border.Effect>
         <TextBlock x:Name='Tier' FontFamily='Thmanyah Sans, Segoe UI' FontSize='15' FontWeight='Bold'/>
       </Border>
+      <Border Background='#D90B1220' CornerRadius='14' Padding='18,6' Margin='0,10,0,0' HorizontalAlignment='Center'>
       <TextBlock x:Name='Msg' Text='Flushing RAM...' Foreground='White' FontFamily='Thmanyah Sans, Segoe UI' FontSize='26'
-                 HorizontalAlignment='Center' TextAlignment='Center' Margin='0,10,0,0' RenderTransformOrigin='0.5,0.5'>
-        <TextBlock.Effect><DropShadowEffect BlurRadius='10' ShadowDepth='2' Direction='270' Opacity='0.95' Color='#000000'/></TextBlock.Effect>
+                 HorizontalAlignment='Center' TextAlignment='Center' RenderTransformOrigin='0.5,0.5'>
         <TextBlock.RenderTransform><ScaleTransform x:Name='MsgScale'/></TextBlock.RenderTransform>
       </TextBlock>
+      </Border>
     </StackPanel>
   </Grid>
 </Window>";
@@ -588,6 +588,8 @@ static class Overlay {
             work = new Thread(() => { result = Mem.Flush(keepSelf: true); }) { IsBackground = true, Priority = ThreadPriority.BelowNormal };
         }
 
+        // 1.2.2 (super light): animations tick at FPS, not WPF's default 60
+        WA.Timeline.DesiredFrameRateProperty.OverrideMetadata(typeof(WA.Timeline), new W.FrameworkPropertyMetadata { DefaultValue = FPS });
         var win = (W.Window)W.Markup.XamlReader.Parse(Xaml);
         Func<string, object> n = win.FindName;
         var root = (W.UIElement)n("Root");
@@ -602,7 +604,10 @@ static class Overlay {
         var msg = (System.Windows.Controls.TextBlock)n("Msg"); var msgScale = (WM.ScaleTransform)n("MsgScale");
         var tierText = (System.Windows.Controls.TextBlock)n("Tier"); var pill = (System.Windows.Controls.Border)n("Pill");
         AddArms((System.Windows.Controls.Canvas)n("Swirl"));
-        if (Solid) { ((W.UIElement)n("Dim")).Opacity = 1; ((W.UIElement)n("GlowDisc")).Opacity = 1; }
+        if (Solid) {  // recordings: full screen, opaque backdrop and glow
+            foreach (string k in new[] { "Dim", "GlowDisc" }) { var u = (W.UIElement)n(k); u.Visibility = W.Visibility.Visible; u.Opacity = 1; }
+            win.SizeToContent = W.SizeToContent.Manual; win.WindowState = W.WindowState.Maximized;
+        }
         if (tier == 3) msg.Text = "Checking the pipes...";
 
         string accent = Accents[tier];
@@ -1233,7 +1238,7 @@ static class BreakdownWindow {
 // Updates (Nader 2026-11-23, "like my other tools"): reads the latest GitHub release, compares it with this version, and on request
 // downloads NJ-Flush.exe over HTTPS, checks its SHA-256 against the digest GitHub publishes, swaps it in and restarts the widget.
 static class Updater {
-    public const string Version = "1.2.1", Repo = "NJ-Burrito/NJ-Flush";
+    public const string Version = "1.2.2", Repo = "NJ-Burrito/NJ-Flush";
     public class Info { public string Tag, Url, Sha, Error; public bool Newer; }
 
     static string Get(string url) {

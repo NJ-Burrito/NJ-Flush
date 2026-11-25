@@ -298,15 +298,15 @@ static class Mem {
         } catch (Exception) { return () => { }; }
     }
 
-    public static string Flush(bool keepSelf = false, bool explorer = true) {
+    public static string Flush(bool keepSelf = false) {
         Action unpin = keepSelf ? PinSelf() : () => { };
-        try { return FlushCore(explorer); } finally { unpin(); }
+        try { return FlushCore(); } finally { unpin(); }
     }
 
-    static string FlushCore(bool explorer) {
+    static string FlushCore() {
         double before = UsedGB();
         int leftovers = Orphans.Reap();  // 2026-11-23: leftover helper processes first (their page tables and RAM come back)
-        if (explorer && Settings.RestartExplorer) RestartExplorer();
+        if (Settings.RestartExplorer) RestartExplorer();
         Privileges();
         int failed = 0;
         foreach (int c in new[] { 2, 3, 4, 5 }) {  // empty working sets, flush modified, purge standby, purge low-priority standby
@@ -322,7 +322,7 @@ static class Mem {
     }
 
     // Kill File Explorer; Windows restarts the shell itself (as the normal user). Start it only if it does not come back.
-    public static void RestartExplorer() {
+    static void RestartExplorer() {
         var ex = Process.GetProcessesByName("explorer");
         if (ex.Length == 0) return;
         foreach (var p in ex) try { p.Kill(); p.WaitForExit(3000); } catch (Exception) { }
@@ -596,8 +596,8 @@ static class Overlay {
             tier = i >= 0 ? i : 1; pct = PreviewPct[tier];
             result = "Preview: nothing was flushed";
         } else {
-            // 1.2.3: Explorer restarts after the overlay closes (killing it mid-animation blacked out the desktop behind the toilet)
-            work = new Thread(() => { result = Mem.Flush(keepSelf: true, explorer: false); }) { IsBackground = true, Priority = ThreadPriority.BelowNormal };
+            // 1.2.5 (Nader): the Explorer restart happens while the overlay is up; the overlay stays until the whole flush is done
+            work = new Thread(() => { result = Mem.Flush(keepSelf: true); }) { IsBackground = true, Priority = ThreadPriority.BelowNormal };
         }
 
         // 1.2.2 (super light): animations tick at FPS, not WPF's default 60
@@ -766,8 +766,8 @@ static class Overlay {
             // stuttering while every working set is emptied
             if (next >= cues.Count) startWork();
             long end = (long)(endAt * Speed);
-            // the ending lands (L26); a slow flush (Explorer restart) never holds the screen: after 1.2 s it finishes in the background
-            if (stage == 0 && next >= cues.Count && t >= end && (result != null || t >= end + 1200)) {
+            // the ending lands (L26) only when the flush, Explorer restart included, is done (20 s safety cap; the ripples keep moving)
+            if (stage == 0 && next >= cues.Count && t >= end && (result != null || t >= end + 20000)) {
                 msg.Text = result ?? "Finishing in the background..."; shownAt = t; stage = 1;
                 if (motion) { S2(msgScale, A(0.85, 1, 380, Back)); msg.BeginAnimation(W.UIElement.OpacityProperty, A(0, 1, 220, null)); }
             } else if (stage == 1 && t >= shownAt + 1300) {
@@ -794,7 +794,7 @@ static class Overlay {
         win.ShowDialog();
         timer.Stop(); if (sound != null) sound.Stop();
         startWork();  // closed before it started (a click on the overlay): the flush still runs
-        if (work != null) { work.Join(20000); if (Settings.RestartExplorer) Mem.RestartExplorer(); }  // flush done, then Explorer, then the widget
+        if (work != null) work.Join(20000);  // let the flush finish before the widget starts
     }
 }
 
@@ -1287,7 +1287,7 @@ static class BreakdownWindow {
 // Updates (Nader 2026-11-23, "like my other tools"): reads the latest GitHub release, compares it with this version, and on request
 // downloads NJ-Flush.exe over HTTPS, checks its SHA-256 against the digest GitHub publishes, swaps it in and restarts the widget.
 static class Updater {
-    public const string Version = "1.2.4", Repo = "NJ-Burrito/NJ-Flush";
+    public const string Version = "1.2.5", Repo = "NJ-Burrito/NJ-Flush";
     public class Info { public string Tag, Url, Sha, Error; public bool Newer; }
 
     static string Get(string url) {

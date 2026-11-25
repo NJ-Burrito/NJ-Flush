@@ -892,7 +892,7 @@ class Widget : Form {
     protected override void OnHandleCreated(EventArgs e) {
         base.OnHandleCreated(e);
         int round = 2; DwmSetWindowAttribute(Handle, 33, ref round, 4);  // Win11 rounded corners
-        StickToDesktop();
+        WatchDesktop();
         if (Settings.Hotkey) RegisterHotKey(Handle, 1, 0x1 | 0x2 | 0x4000, (uint)Keys.F);  // Ctrl+Alt+F, no auto-repeat; taken by another app = silently off
     }
     protected override void OnHandleDestroyed(EventArgs e) { UnregisterHotKey(Handle, 1); base.OnHandleDestroyed(e); }
@@ -905,25 +905,40 @@ class Widget : Form {
 
     // WM_WINDOWPOSCHANGING: always insert at HWND_BOTTOM, so it sits on the desktop under every window
     protected override void WndProc(ref Message msg) {
-        if (msg.Msg == 0x46) {
+        if (msg.Msg == 0x46 && !raised) {
             var wp = (WindowPos)Marshal.PtrToStructure(msg.LParam, typeof(WindowPos));
-            wp.after = new IntPtr(1);
+            wp.after = new IntPtr(1);  // shown desktop (raised): Restack() places it, topmost
             wp.flags &= ~0x4u;  // clear SWP_NOZORDER
             Marshal.StructureToPtr(wp, msg.LParam, false);
         }
         if (msg.Msg == 0x312 && msg.WParam.ToInt32() == 1) TryFlush();  // WM_HOTKEY
-        if (msg.Msg == TaskbarCreated && TaskbarCreated != 0) StickToDesktop();  // Explorer restarted: a new desktop window
         base.WndProc(ref msg);
     }
 
-    // 1.2.3: owned by the desktop (Progman), so "Show desktop" (the corner button, Win+D) keeps the widget instead of hiding it
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern IntPtr FindWindow(string cls, string title);
-    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] static extern IntPtr SetWindowLongPtr(IntPtr h, int index, IntPtr v);
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int RegisterWindowMessage(string name);
-    static readonly int TaskbarCreated = RegisterWindowMessage("TaskbarCreated");
-    void StickToDesktop() {
-        IntPtr desk = FindWindow("Progman", null);
-        if (desk != IntPtr.Zero) SetWindowLongPtr(Handle, -8, desk);  // GWL_HWNDPARENT = owner
+    // 1.2.4: "Show desktop" (the corner button, Win+D) raises the desktop over every window, this one included. When the desktop
+    // becomes the foreground window the widget lifts to the top (no focus taken); when any other window does, it goes back to the bottom.
+    delegate void WinEventProc(IntPtr hook, uint ev, IntPtr h, int obj, int child, uint thread, uint time);
+    [DllImport("user32.dll")] static extern IntPtr SetWinEventHook(uint min, uint max, IntPtr mod, WinEventProc cb, uint pid, uint tid, uint flags);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+    [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+    WinEventProc onForeground;  // kept alive for the hook
+    bool raised;
+    readonly System.Windows.Forms.Timer restack = new System.Windows.Forms.Timer { Interval = 300 };
+    void Restack() {  // shown desktop: topmost (it sits above normal windows); otherwise not topmost, at the bottom. NOSIZE|NOMOVE|NOACTIVATE
+        if (raised) SetWindowPos(Handle, new IntPtr(-1), 0, 0, 0, 0, 0x1 | 0x2 | 0x10);
+        else { SetWindowPos(Handle, new IntPtr(-2), 0, 0, 0, 0, 0x1 | 0x2 | 0x10); SetWindowPos(Handle, new IntPtr(1), 0, 0, 0, 0, 0x1 | 0x2 | 0x10); }
+    }
+    void WatchDesktop() {
+        onForeground = (hook, ev, h, obj, child, thread, time) => {
+            var cls = new StringBuilder(32); GetClassName(h, cls, 32);
+            bool desk = cls.ToString() == "WorkerW" || cls.ToString() == "Progman";
+            if (h == Handle) return;
+            raised = desk;
+            Restack();
+            if (desk) { restack.Stop(); restack.Start(); }  // the shell re-stacks the desktop just after the event: lift again once it settled
+        };
+        restack.Tick += delegate { restack.Stop(); if (raised) Restack(); };
+        SetWinEventHook(3, 3, IntPtr.Zero, onForeground, 0, 0, 0);  // EVENT_SYSTEM_FOREGROUND, out of context
     }
 
     // fixed spot on the main monitor: right edge, just above the taskbar clock
@@ -1272,7 +1287,7 @@ static class BreakdownWindow {
 // Updates (Nader 2026-11-23, "like my other tools"): reads the latest GitHub release, compares it with this version, and on request
 // downloads NJ-Flush.exe over HTTPS, checks its SHA-256 against the digest GitHub publishes, swaps it in and restarts the widget.
 static class Updater {
-    public const string Version = "1.2.3", Repo = "NJ-Burrito/NJ-Flush";
+    public const string Version = "1.2.4", Repo = "NJ-Burrito/NJ-Flush";
     public class Info { public string Tag, Url, Sha, Error; public bool Newer; }
 
     static string Get(string url) {

@@ -298,15 +298,15 @@ static class Mem {
         } catch (Exception) { return () => { }; }
     }
 
-    public static string Flush(bool keepSelf = false) {
+    public static string Flush(bool keepSelf = false, bool explorer = true) {
         Action unpin = keepSelf ? PinSelf() : () => { };
-        try { return FlushCore(); } finally { unpin(); }
+        try { return FlushCore(explorer); } finally { unpin(); }
     }
 
-    static string FlushCore() {
+    static string FlushCore(bool explorer) {
         double before = UsedGB();
         int leftovers = Orphans.Reap();  // 2026-11-23: leftover helper processes first (their page tables and RAM come back)
-        if (Settings.RestartExplorer) RestartExplorer();
+        if (explorer && Settings.RestartExplorer) RestartExplorer();
         Privileges();
         int failed = 0;
         foreach (int c in new[] { 2, 3, 4, 5 }) {  // empty working sets, flush modified, purge standby, purge low-priority standby
@@ -322,7 +322,7 @@ static class Mem {
     }
 
     // Kill File Explorer; Windows restarts the shell itself (as the normal user). Start it only if it does not come back.
-    static void RestartExplorer() {
+    public static void RestartExplorer() {
         var ex = Process.GetProcessesByName("explorer");
         if (ex.Length == 0) return;
         foreach (var p in ex) try { p.Kill(); p.WaitForExit(3000); } catch (Exception) { }
@@ -384,7 +384,8 @@ static class Overlay {
         <GradientStop x:Name='Glow' Color='#3322D3EE' Offset='0'/><GradientStop Color='#0022D3EE' Offset='1'/>
       </RadialGradientBrush></Ellipse.Fill>
     </Ellipse>
-    <StackPanel VerticalAlignment='Center' HorizontalAlignment='Center' Margin='40'>
+    <!-- 1.2.3: fixed width, so the longer result line never widens the window and shifts the toilet right -->
+    <StackPanel VerticalAlignment='Center' HorizontalAlignment='Center' Margin='40' Width='560'>
       <Viewbox Height='460' RenderTransformOrigin='0.5,0.5'>
         <Viewbox.RenderTransform><ScaleTransform x:Name='Pop' ScaleX='0.6' ScaleY='0.6'/></Viewbox.RenderTransform>
         <Canvas Width='300' Height='440'>
@@ -520,7 +521,7 @@ static class Overlay {
       </Border>
       <Border Background='#D90B1220' CornerRadius='14' Padding='18,6' Margin='0,10,0,0' HorizontalAlignment='Center'>
       <TextBlock x:Name='Msg' Text='Flushing RAM...' Foreground='White' FontFamily='Thmanyah Sans, Segoe UI' FontSize='26'
-                 HorizontalAlignment='Center' TextAlignment='Center' RenderTransformOrigin='0.5,0.5'>
+                 HorizontalAlignment='Center' TextAlignment='Center' TextWrapping='Wrap' RenderTransformOrigin='0.5,0.5'>
         <TextBlock.RenderTransform><ScaleTransform x:Name='MsgScale'/></TextBlock.RenderTransform>
       </TextBlock>
       </Border>
@@ -595,7 +596,8 @@ static class Overlay {
             tier = i >= 0 ? i : 1; pct = PreviewPct[tier];
             result = "Preview: nothing was flushed";
         } else {
-            work = new Thread(() => { result = Mem.Flush(keepSelf: true); }) { IsBackground = true, Priority = ThreadPriority.BelowNormal };
+            // 1.2.3: Explorer restarts after the overlay closes (killing it mid-animation blacked out the desktop behind the toilet)
+            work = new Thread(() => { result = Mem.Flush(keepSelf: true, explorer: false); }) { IsBackground = true, Priority = ThreadPriority.BelowNormal };
         }
 
         // 1.2.2 (super light): animations tick at FPS, not WPF's default 60
@@ -752,12 +754,17 @@ static class Overlay {
             endAt = 7450;
         }
 
+        bool started = false;
+        Action startWork = () => { if (work != null && !started) { started = true; work.Start(); } };
         var clock = new Stopwatch();
         int next = 0, stage = 0; long shownAt = 0;
         var timer = new W.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         timer.Tick += delegate {
             long t = clock.ElapsedMilliseconds;
             while (next < cues.Count && t >= cues[next].Item1) cues[next++].Item2();
+            // 1.2.3: the flush starts with the last cue (the refill), so the motion runs exactly like the preview instead of
+            // stuttering while every working set is emptied
+            if (next >= cues.Count) startWork();
             long end = (long)(endAt * Speed);
             // the ending lands (L26); a slow flush (Explorer restart) never holds the screen: after 1.2 s it finishes in the background
             if (stage == 0 && next >= cues.Count && t >= end && (result != null || t >= end + 1200)) {
@@ -770,14 +777,10 @@ static class Overlay {
                 stage = 2;
             }
         };
-        bool started = false;
-        Action startWork = () => { if (work != null && !started) { started = true; work.Start(); } };
         // 1.2.1: the clock and the sound start when the first frame is on screen (Loaded fired before it, so a slow first paint
-        // under full RAM skipped frames while the sound ran ahead); the flush starts 250 ms later, after the overlay is up, because
-        // started first it emptied every working set (this one included) and purged the file cache while WPF was still loading
+        // under full RAM skipped frames while the sound ran ahead)
         win.ContentRendered += delegate {
             clock.Start(); timer.Start();
-            if (work != null) { var go = new W.Threading.DispatcherTimer { Interval = Ms(250) }; go.Tick += delegate { go.Stop(); startWork(); }; go.Start(); }
             if (sound != null) {               // one soundtrack per tier, cued to this clock, at the user's volume
                 uint v = (uint)(Settings.Volume * 0xFFFF / 100); waveOutSetVolume(IntPtr.Zero, v | (v << 16));
                 sound.Play();
@@ -791,7 +794,7 @@ static class Overlay {
         win.ShowDialog();
         timer.Stop(); if (sound != null) sound.Stop();
         startWork();  // closed before it started (a click on the overlay): the flush still runs
-        if (work != null) work.Join(20000);  // let the flush finish before the widget starts
+        if (work != null) { work.Join(20000); if (Settings.RestartExplorer) Mem.RestartExplorer(); }  // flush done, then Explorer, then the widget
     }
 }
 
@@ -889,6 +892,7 @@ class Widget : Form {
     protected override void OnHandleCreated(EventArgs e) {
         base.OnHandleCreated(e);
         int round = 2; DwmSetWindowAttribute(Handle, 33, ref round, 4);  // Win11 rounded corners
+        StickToDesktop();
         if (Settings.Hotkey) RegisterHotKey(Handle, 1, 0x1 | 0x2 | 0x4000, (uint)Keys.F);  // Ctrl+Alt+F, no auto-repeat; taken by another app = silently off
     }
     protected override void OnHandleDestroyed(EventArgs e) { UnregisterHotKey(Handle, 1); base.OnHandleDestroyed(e); }
@@ -908,7 +912,18 @@ class Widget : Form {
             Marshal.StructureToPtr(wp, msg.LParam, false);
         }
         if (msg.Msg == 0x312 && msg.WParam.ToInt32() == 1) TryFlush();  // WM_HOTKEY
+        if (msg.Msg == TaskbarCreated && TaskbarCreated != 0) StickToDesktop();  // Explorer restarted: a new desktop window
         base.WndProc(ref msg);
+    }
+
+    // 1.2.3: owned by the desktop (Progman), so "Show desktop" (the corner button, Win+D) keeps the widget instead of hiding it
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern IntPtr FindWindow(string cls, string title);
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] static extern IntPtr SetWindowLongPtr(IntPtr h, int index, IntPtr v);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int RegisterWindowMessage(string name);
+    static readonly int TaskbarCreated = RegisterWindowMessage("TaskbarCreated");
+    void StickToDesktop() {
+        IntPtr desk = FindWindow("Progman", null);
+        if (desk != IntPtr.Zero) SetWindowLongPtr(Handle, -8, desk);  // GWL_HWNDPARENT = owner
     }
 
     // fixed spot on the main monitor: right edge, just above the taskbar clock
@@ -1239,8 +1254,17 @@ static class BreakdownWindow {
         btn("Refresh", false, refresh);
         btn("Close", false, close);
         var f = btn("Flush now", true, flush);
-        int left = Settings.CooldownLeft();
-        if (left > 0) { f.IsEnabled = false; f.Content = string.Format("Flush in {0} s", left); }
+        // 1.2.3: the cooldown counts down live and the button wakes up by itself at 0
+        Func<bool> tick = () => {
+            int left = Settings.CooldownLeft();
+            f.IsEnabled = left == 0; f.Content = left > 0 ? string.Format("Flush in {0} s", left) : "Flush now";
+            return left > 0;
+        };
+        if (tick()) {
+            var cd = new W.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            cd.Tick += delegate { if (!tick() || !f.IsLoaded) cd.Stop(); };
+            cd.Start();
+        }
         root.Children.Add(btns);
     }
 }
@@ -1248,7 +1272,7 @@ static class BreakdownWindow {
 // Updates (Nader 2026-11-23, "like my other tools"): reads the latest GitHub release, compares it with this version, and on request
 // downloads NJ-Flush.exe over HTTPS, checks its SHA-256 against the digest GitHub publishes, swaps it in and restarts the widget.
 static class Updater {
-    public const string Version = "1.2.2", Repo = "NJ-Burrito/NJ-Flush";
+    public const string Version = "1.2.3", Repo = "NJ-Burrito/NJ-Flush";
     public class Info { public string Tag, Url, Sha, Error; public bool Newer; }
 
     static string Get(string url) {

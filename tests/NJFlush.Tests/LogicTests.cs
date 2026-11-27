@@ -322,7 +322,7 @@ public class Strings {
     [Fact] public void Every_key_used_in_the_source_is_in_the_table() {
         var keys = new System.Collections.Generic.HashSet<string>(Tx.All.Select(r => r[0]));
         var used = new System.Collections.Generic.List<string>();
-        foreach (var f in Directory.GetFiles(SrcDir(), "*.cs")) {
+        foreach (var f in Directory.GetFiles(Path.Combine(SrcDir(), "src"), "*.cs", SearchOption.AllDirectories)) {
             if (Path.GetFileName(f) == "Strings.cs") continue;
             foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(File.ReadAllText(f), @"Tx\.(?:T|F)\(""([a-z0-9_.]+)""[,)]")) used.Add(m.Groups[1].Value);
         }

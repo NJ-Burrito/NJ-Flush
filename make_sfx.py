@@ -1,7 +1,7 @@
 """Mixes the four tier soundtracks (flush-light/medium/heavy/clogged.wav) from the real Mixkit recordings in sfx/.
 
-Each sound sits on a cue frame of the overlay animation (NJFlush.cs, Overlay.Run); the clock starts when the overlay
-shows and the tier's wav is played at that same moment. Change a cue in NJFlush.cs -> change it here.
+Each sound sits on a cue frame of the overlay animation (src/Scenes/Toilet.cs, Overlay.Run); the clock starts when the overlay
+shows and the tier's wav is played at that same moment. Change a cue in src/Scenes/Toilet.cs -> change it here.
 Level: each tier peaks at 10% full scale or lower (Nader 2026-11-23: "10%, smooth, not loud, just sfx").
 Needs ffmpeg on PATH (decode only). Stdlib otherwise.
 """
@@ -32,7 +32,7 @@ def db(g):
     return 10 ** (g / 20)
 
 
-SPEED = 0.6   # must equal Overlay.Speed in NJFlush.cs: the animation runs at 60% of its designed timing
+SPEED = 0.6   # must equal Overlay.Speed in src/Scenes/ToiletParts.cs: the animation runs at 60% of its designed timing
 
 
 def mix(name, events, length_s, peak):

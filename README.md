@@ -181,18 +181,12 @@ build.cmd                     REM -> dist\NJ-Flush.exe (C# 5, csc.exe from the F
 
 | File | Role |
 |---|---|
-| `NJFlush.cs` | installer, settings, command-line switches, hidden icon, settings window |
-| `Work.cs` | one flush job (RAM, CPU, GPU, All) as the elevated task runs it, and its log |
-| `Res.cs` | processes, CPU, GPU (DXGI, PDH), efficiency mode, the guard, the sampler, shortcuts |
-| `Panel.cs`, `Theme.cs`, `Widget.cs` | the panel, its shared design system, the widget |
-| `Strings.cs` | every text in English and Arabic |
-| `Scenes.cs`, `SceneToilet.cs`, `SceneFan.cs`, `SceneMirror.cs`, `SceneShower.cs` | the animations, four variants each (beats and sound cues: [`design/1.3-scenes.md`](design/1.3-scenes.md)) |
-| `UiRender.cs` | off-screen renders of the panel and widget (`/render-ui`) |
-| `make_sfx.py`, `make_sfx_scenes.py` | mix the RAM `flush-<tier>.wav` and the `scene-<kind>-<n>.wav` tracks from Mixkit recordings on the animations' cue times (need ffmpeg) |
-| `build.cmd` | compiles it, embeds the icon and the sound tracks |
-| `make_logo.ps1`, `make_icon.py` | render the logo from vector art, then the `.ico` (Pillow) |
-| `docs/` | the website (GitHub Pages) and the README images |
-| `design/` | design notes and the A/B measurement |
+| `src/App/` | start-up and command-line switches, the installer and the flush task, settings, updates |
+| `src/Flush/` | one flush job (RAM, CPU, GPU, All) as the elevated task runs it, the memory calls, leftover helpers |
+| `src/Machine/` | processes, CPU, GPU (DXGI, PDH), efficiency mode, the guard, the sampler, shortcuts |
+| `src/UI/` | the panel (one file per page), its design system, the widget, the RAM breakdown, off-screen renders |
+| `src/Scenes/` | the animations: the toilet, the fan, the mirror, the shower, each with its parts file (beats and sound cues: `design/1.3-scenes.md`) |
+| `src/Text/Strings.cs` | every text in English and Arabic |
 | `tests/NJFlush.Tests` | unit tests of the decisions: which leftover processes may be stopped, settings ranges, the cooldown, the flush tier, the updater's checksum rule, the Arabic strings (`dotnet test tests/NJFlush.Tests`, .NET 10 SDK; `NJFlush.csproj` exists only for them) |
 
 **Sounds:** real recordings from [Mixkit](https://mixkit.co) under the Mixkit Sound Effects Free License. The mixed

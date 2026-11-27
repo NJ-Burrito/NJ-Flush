@@ -13,7 +13,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="NJFlush.cs;Res.cs;Work.cs;Panel.cs;Theme.cs;Scenes.cs;SceneFan.cs;SceneMirror.cs;SceneShower.cs;SceneToilet.cs;Widget.cs;UiRender.cs;Breakdown.cs;Strings.cs" />
+    <Compile Include="src\**\*.cs" />
     <EmbeddedResource Include="flush-*.wav;scene-*.wav" LogicalName="%(Filename)%(Extension)" />
     <PackageReference Include="System.Management" Version="8.0.0" />
   </ItemGroup>

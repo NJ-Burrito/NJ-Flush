@@ -144,7 +144,7 @@
   .btn-ghost { border: 1px solid var(--line); }
   .btn-ghost:hover { background: var(--bg-2); }
   .btn .ico { flex: none; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   h1, h2, h3 { text-wrap: balance; }
   .lede, .sub, .note, .cell p, .tier p, .step p { text-wrap: pretty; }
 
@@ -190,6 +190,7 @@
   .c-f { grid-column: span 6; flex-direction: row; align-items: center; justify-content: space-between; gap: 24px;
          }
   kbd { font: 600 13px ui-monospace, "Cascadia Mono", Consolas, monospace; padding: 2px 7px; border-radius: 6px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); }
+  @media (prefers-color-scheme: light) { .cell:not(.c-a) kbd, .keys kbd { border-color: rgba(13,22,32,.28); background: rgba(13,22,32,.06); } }
 
   /* a working replica of the widget */
   .widget-wrap { flex: none; }

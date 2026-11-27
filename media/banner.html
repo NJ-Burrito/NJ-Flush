@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:TS;font-weight:500;src:url("{{FONTS}}/thmanyahsans-Medium.woff2")}
+@font-face{font-family:TS;font-weight:700;src:url("{{FONTS}}/thmanyahsans-Bold.woff2")}
+@font-face{font-family:TS;font-weight:900;src:url("{{FONTS}}/thmanyahsans-Black.woff2")}
+*{box-sizing:border-box;margin:0}
+html,body{width:{{W}}px;height:{{H}}px;overflow:hidden;background:#03070F;font-family:TS,sans-serif;color:#eaf4fb}
+.stage{position:absolute;left:0;top:{{TOP}}px;width:1280px;height:640px;transform:scale({{S}});transform-origin:0 0;
+ background:radial-gradient(ellipse 620px 520px at 960px 330px,rgba(34,211,238,.30),rgba(34,211,238,0) 70%),radial-gradient(ellipse 500px 400px at 0 0,rgba(34,211,238,.10),rgba(34,211,238,0) 70%),linear-gradient(135deg,#050a13,#03070F 60%,#06101b)}
+.bg-extra{position:absolute;left:0;right:0;top:-80px;bottom:-80px;z-index:-1}
+.copy{position:absolute;left:72px;top:0;height:640px;width:600px;display:flex;flex-direction:column;justify-content:center}
+.brand{display:flex;align-items:center;gap:22px}
+.brand img{width:116px;height:116px;filter:drop-shadow(0 12px 28px rgba(34,211,238,.35))}
+h1{font-weight:900;font-size:104px;letter-spacing:-3px;line-height:1;white-space:nowrap}
+h1 b{color:#22D3EE;font-weight:900}
+.line{margin-top:30px;font-weight:700;font-size:44px;line-height:1.15;color:#eaf4fb;max-width:560px}
+.line em{font-style:normal;color:#22D3EE}
+.sub{margin-top:18px;font-weight:500;font-size:26px;color:#8fa6bb}
+.chips{margin-top:30px;display:flex;gap:12px}
+.chips span{font-weight:700;font-size:22px;color:#22D3EE;border:1.5px solid rgba(34,211,238,.5);border-radius:999px;padding:6px 18px;background:rgba(34,211,238,.08)}
+.card{position:absolute;border-radius:30px;overflow:hidden;border:1.5px solid rgba(160,220,240,.28);box-shadow:0 30px 60px rgba(0,0,0,.65),0 0 0 1px rgba(0,0,0,.5)}
+.card img{display:block;width:100%;height:100%}
+#c1{width:290px;height:290px;left:700px;top:64px;transform:rotate(-7deg);filter:blur(1.6px) brightness(.62) saturate(.9)}
+#c2{width:300px;height:300px;left:985px;top:42px;transform:rotate(6deg);filter:blur(1px) brightness(.72)}
+#c3{width:300px;height:300px;left:690px;top:330px;transform:rotate(4deg);filter:brightness(.88)}
+#c4{width:360px;height:360px;left:905px;top:225px;transform:rotate(-3deg);box-shadow:0 40px 80px rgba(0,0,0,.7),0 0 70px rgba(34,211,238,.28);border-color:rgba(34,211,238,.55)}
+</style></head><body><div class="stage">
+<div class="copy">
+ <div class="brand"><img src="{{WORK}}/logo-1024.png"><h1>NJ-<b>Flush</b></h1></div>
+ <div class="line">Free <em>RAM, CPU and GPU</em> flusher for Windows</div>
+ <div class="sub">One click. A bathroom full of fun animations.</div>
+ <div class="chips"><span>RAM</span><span>CPU</span><span>GPU</span><span>Flush all</span></div>
+</div>
+<div class="card" id="c1"><img src="{{WORK}}/s-clogged.png"></div>
+<div class="card" id="c2"><img src="{{WORK}}/s-cpu.png"></div>
+<div class="card" id="c3"><img src="{{WORK}}/s-gpu.png"></div>
+<div class="card" id="c4"><img src="{{WORK}}/s-all.png"></div>
+</div></body></html>

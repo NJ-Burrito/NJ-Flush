@@ -2,11 +2,13 @@
 
 <h1 align="center">NJ-Flush</h1>
 
-<p align="center">Frees Windows RAM with one double-click, and makes it fun to watch.</p>
+<p align="center">Free RAM cleaner for Windows 10 and 11: one double-click frees memory, and a toilet flushes on screen while it does.</p>
 
-<p align="center"><img src="docs/hero.gif" width="420" alt="NJ-Flush clearing a clogged flush: the water rises, a plunger pushes three times, then the bowl drains"></p>
+<p align="center"><a href="https://nj-burrito.github.io/NJ-Flush/">Website</a> · <a href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest">Download</a> · <a href="https://nj-burrito.github.io/">More by NJ-Burrito</a></p>
 
-NJ-Flush is a single, self-installing Windows program. Double-click it and it hands memory back to Windows: it empties
+<p align="center"><img src="docs/hero.gif" width="420" height="420" alt="NJ-Flush clearing a clogged flush: the water rises, a plunger pushes three times, then the bowl drains"></p>
+
+NJ-Flush ([nj-burrito.github.io/NJ-Flush](https://nj-burrito.github.io/NJ-Flush/)) is a free, open-source memory cleaner for Windows 11 and 10: a single, self-installing program. Double-click it and it hands memory back to Windows: it empties
 every process's working set, writes the modified page list to disk, purges the standby cache and stops leftover helper
 processes from closed sessions. While it works, a toilet flushes on your screen. How hard it flushes depends on how
 full your RAM was.
@@ -50,7 +52,7 @@ in `%LOCALAPPDATA%\NJ-Flush\settings.ini`.
 | Play sound effects | on | the flush sounds, never louder than 10% of full volume |
 | Volume | 100% | of that already quiet level |
 | Preview | | plays Light, Medium, Heavy or Clogged with your current settings |
-| Restart File Explorer on flush | on | frees Explorer's memory; turn off to keep your open folders |
+| Restart File Explorer on flush | on | frees Explorer's memory; turn off to keep your open folders. [NJ-Sort](https://nj-burrito.github.io/NJ-Sort/) keeps desktop icons in place and restores them after the restart |
 | Wait between flushes | 60 s | a flush asked for sooner is refused, and the widget counts down |
 | Auto-flush when RAM stays high | off | flushes by itself when RAM stays at the chosen level (70 to 99%) for 30 s, at most once every 10 minutes |
 | Ctrl+Alt+F flushes from anywhere | on | the global shortcut |
@@ -61,7 +63,7 @@ in `%LOCALAPPDATA%\NJ-Flush\settings.ini`.
 
 - Stops leftover helper processes: a `node.exe` / `cmd.exe` tree whose parent is gone, older than 6 hours, whose command line names a known
   developer helper (`npx`, MCP servers, Playwright test servers). Nothing else is ever stopped.
-- Restarts File Explorer (optional).
+- Restarts File Explorer (optional). If Explorer's restart moves your desktop icons, the companion tool [NJ-Sort](https://nj-burrito.github.io/NJ-Sort/) keeps them where you put them and puts them back.
 - Calls the Windows memory manager (`NtSetSystemInformation`, `SystemMemoryListInformation`) to empty working sets, flush the
   modified list and purge the standby lists.
 
@@ -96,6 +98,10 @@ own). To re-mix, download Mixkit items 1830, 1871, 1872, 1889, 1311, 1317, 3000 
 
 C# 5 on .NET Framework 4 (WPF for the overlay animation and the memory breakdown, WinForms for the widget and settings), Win32 / NT native calls, Windows Task
 Scheduler, Python + ffmpeg for the sound mix, Pillow for the icon, plain HTML/CSS for the site.
+
+## More tools by NJ-Burrito
+
+[Portfolio](https://nj-burrito.github.io/) · [QA-Wrap](https://nj-burrito.github.io/QA-Wrap/) · [Business-Wrap](https://nj-burrito.github.io/Business-Wrap/) · [NJ-Kit](https://nj-burrito.github.io/NJ-Kit/) · [NJ-Whip](https://nj-burrito.github.io/NJ-Whip/) · [Profile-Wrap](https://nj-burrito.github.io/Profile-Wrap/) · [Story-Wrap](https://nj-burrito.github.io/story-wrap/) ([repo](https://github.com/NJ-Burrito/Story-Wrap)) · [NJ-Flush](https://nj-burrito.github.io/NJ-Flush/) · [NJ-Sort](https://nj-burrito.github.io/NJ-Sort/)
 
 ## Licence
 

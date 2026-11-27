@@ -1,19 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NJ-Flush: free RAM cleaner for Windows 11, one double-click</title>
-<meta name="description" content="NJ-Flush is a free, open-source RAM cleaner for Windows 10 and 11. One double-click frees memory while a toilet flushes on screen. Single exe, no installer.">
-<meta name="keywords" content="RAM cleaner, memory cleaner, free RAM Windows 11, Windows memory cleaner, free up RAM, NJ-Flush">
+<meta name="description" content="NJ-Flush is a free RAM cleaner and Windows memory cleaner: flush RAM, calm the CPU, restart the GPU. Open source, one exe, no installer.">
+<meta name="keywords" content="RAM cleaner, memory cleaner, free RAM Windows 11, Windows memory cleaner, clear RAM cache Windows 11, free up RAM, NJ-Flush">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="theme-color" content="#0a0f17">
 <meta name="author" content="Nader Alzghoul (NJ-Burrito)">
 <link rel="canonical" href="https://nj-burrito.github.io/NJ-Flush/">
+<link rel="alternate" hreflang="en" href="https://nj-burrito.github.io/NJ-Flush/">
+<link rel="alternate" hreflang="ar" href="https://nj-burrito.github.io/NJ-Flush/ar/">
+<link rel="alternate" hreflang="x-default" href="https://nj-burrito.github.io/NJ-Flush/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="NJ-Burrito">
 <meta property="og:title" content="NJ-Flush: free RAM cleaner for Windows 11, one double-click">
-<meta property="og:description" content="NJ-Flush is a free, open-source RAM cleaner for Windows 10 and 11. One double-click frees memory while a toilet flushes on screen. Single exe, no installer.">
+<meta property="og:description" content="NJ-Flush is a free RAM cleaner and Windows memory cleaner: flush RAM, calm the CPU, restart the GPU. Open source, one exe, no installer.">
 <meta property="og:url" content="https://nj-burrito.github.io/NJ-Flush/">
 <meta property="og:image" content="https://nj-burrito.github.io/NJ-Flush/og-image.png">
 <meta property="og:image:type" content="image/png">
@@ -25,7 +28,7 @@
 <meta property="og:locale:alternate" content="ar_JO">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="NJ-Flush: free RAM cleaner for Windows 11, one double-click">
-<meta name="twitter:description" content="NJ-Flush is a free, open-source RAM cleaner for Windows 10 and 11. One double-click frees memory while a toilet flushes on screen. Single exe, no installer.">
+<meta name="twitter:description" content="NJ-Flush is a free RAM cleaner and Windows memory cleaner: flush RAM, calm the CPU, restart the GPU. Open source, one exe, no installer.">
 <meta name="twitter:image" content="https://nj-burrito.github.io/NJ-Flush/og-image.png">
 <meta name="twitter:image:alt" content="NJ-Flush, a free Windows RAM cleaner: a toilet bowl of clean cyan water with a check mark and the word Flushed">
 <script type="application/ld+json">
@@ -44,23 +47,27 @@
     "NJFlush",
     "نج فلش"
    ],
-   "description": "NJ-Flush is a free, open-source RAM cleaner for Windows 10 and 11. One double-click frees memory while a toilet flushes on screen. Single exe, no installer.",
+   "description": "NJ-Flush is a free RAM cleaner and Windows memory cleaner: flush RAM, calm the CPU, restart the GPU. Open source, one exe, no installer.",
    "url": "https://nj-burrito.github.io/NJ-Flush/",
    "downloadUrl": "https://github.com/NJ-Burrito/NJ-Flush/releases/latest",
    "codeRepository": "https://github.com/NJ-Burrito/NJ-Flush",
+   "softwareVersion": "1.3.0",
    "applicationCategory": "UtilitiesApplication",
    "operatingSystem": "Windows 10, Windows 11",
    "image": [
     "https://nj-burrito.github.io/NJ-Flush/og-image.png",
     "https://nj-burrito.github.io/NJ-Flush/logo-1024.png"
    ],
-   "screenshot": "https://nj-burrito.github.io/NJ-Flush/hero-poster.jpg",
+   "screenshot": "https://nj-burrito.github.io/NJ-Flush/shots/panel-ram.png",
    "featureList": [
-    "Frees RAM with one double-click or Ctrl+Alt+F",
-    "Four flush animations chosen by how full RAM is",
-    "Empties working sets, writes the modified page list, purges the standby cache",
-    "Live RAM widget above the taskbar clock and memory breakdown",
-    "Optional auto-flush when RAM stays high",
+    "Four flushes, RAM, CPU, GPU and All, each with its own animation in four variants",
+    "Gentle RAM flush that does nothing under 75% RAM in use",
+    "Deep flush empties every working set, writes the modified page list and clears the standby list",
+    "Panel in the style of Task Manager with RAM, CPU, GPU and Efficiency guard pages and Settings",
+    "Efficiency guard keeps browsers and chosen apps out of Windows 11 efficiency mode",
+    "Draggable widget with RAM, CPU and VRAM bars and a hidden-icon tray icon",
+    "Changeable keyboard shortcuts",
+    "Full Arabic interface, right to left",
     "Self-updating with SHA-256 check"
    ],
    "license": "https://opensource.org/licenses/MIT",
@@ -73,7 +80,10 @@
    "author": {
     "@id": "https://nj-burrito.github.io/#person"
    },
-   "inLanguage": "en"
+   "inLanguage": [
+    "en",
+    "ar"
+   ]
   },
   {
    "@type": "VideoObject",
@@ -83,8 +93,8 @@
    "thumbnailUrl": "https://nj-burrito.github.io/NJ-Flush/hero-poster.jpg",
    "contentUrl": "https://nj-burrito.github.io/NJ-Flush/hero.mp4",
    "uploadDate": "2026-11-27",
-   "duration": "PT7S",
-   "encodingFormat": "video/mp4"
+   "encodingFormat": "video/mp4",
+   "inLanguage": "en"
   },
   {
    "@type": "Person",
@@ -123,176 +133,15 @@
 </script>
 <link rel="icon" href="logo.png">
 <script>document.documentElement.classList.add("js")</script>
-<style>
-  /* Design read: landing for Windows power users, dark-tech with porcelain + cyan from the app's own art.
-     Dials 7 / 4 / 3. Hero is the video; every other surface is a row or a rule, not a card.
-     Font: Thmanyah Sans when installed (never web-served: licence), else the system UI face. */
-  :root {
-    --bg: #0a0f17; --bg-2: #0f1723; --line: #1c2735; --text: #e6edf3; --muted: #9aa8b6;
-    --accent: #22d3ee; --accent-ink: #062a33; --porcelain: #f1f5f9;
-    --t1: #22d3ee; --t2: #facc15; --t3: #fb923c; --t4: #f87171;
-    --r: 14px; --ease: cubic-bezier(.16, 1, .3, 1);
-  }
-  @media (prefers-color-scheme: light) {
-    :root { --bg: #f4f7fa; --bg-2: #ffffff; --line: #dbe3ea; --text: #0d1620; --muted: #4c5b69; --accent: #0e7490; --accent-ink: #ffffff; }
-  }
-  * { box-sizing: border-box; margin: 0; }
-  html { scroll-behavior: smooth; }
-  body { background: var(--bg); color: var(--text); font: 16px/1.6 "Thmanyah Sans", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-  a { color: inherit; }
-  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
-
-  nav { height: 68px; display: flex; align-items: center; justify-content: space-between; }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; letter-spacing: -.01em; }
-  .brand img { width: 32px; height: 32px; }
-  .nav-links { display: flex; gap: 22px; align-items: center; font-size: 15px; color: var(--muted); }
-  .nav-links a { text-decoration: none; transition: color .2s; }
-  .nav-links a:hover { color: var(--text); }
-
-  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 10px; font-weight: 600; text-decoration: none;
-         white-space: nowrap; transition: transform .2s var(--ease), background-color .2s; }
-  .btn:active { transform: scale(.97); }
-  .btn-primary { background: var(--accent); color: var(--accent-ink); }
-  .btn-primary:hover { transform: translateY(-1px); }
-  .btn-ghost { border: 1px solid var(--line); }
-  .btn-ghost:hover { background: var(--bg-2); }
-  .btn .ico { flex: none; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-  h1, h2, h3 { text-wrap: balance; }
-  .lede, .sub, .note, .claim, .tier p, .step p { text-wrap: pretty; }
-
-  /* hero: the video is the hero, edge to edge on its own dark panel */
-  .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; padding: 40px 24px 72px; min-height: calc(100dvh - 68px); }
-  h1 { font-size: clamp(40px, 5.4vw, 64px); line-height: 1.04; letter-spacing: -.035em; font-weight: 800; }
-  h1 em { font-style: normal; color: var(--accent); }
-  h1 .kicker { display: block; font-size: .32em; letter-spacing: .02em; color: var(--accent); margin-bottom: 10px; }
-  .lede { color: var(--muted); font-size: 19px; max-width: 34ch; margin: 22px 0 28px; }
-  .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
-  .ctas .btn-primary { white-space: normal; }
-  .proof { margin-top: 18px; font-size: 14px; color: var(--muted); }
-  .stage { position: relative; aspect-ratio: 1; border-radius: 20px; overflow: hidden; background: #0a0f17; border: 1px solid var(--line); }
-  .stage video, .stage .still { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
-  .stage .still { display: none; }
-
-  section.wrap:not(.hero) { padding-top: 96px; padding-bottom: 96px; }
-  h2 { font-size: clamp(30px, 3.6vw, 44px); line-height: 1.1; letter-spacing: -.025em; font-weight: 800; max-width: 20ch; }
-  .sub { color: var(--muted); max-width: 60ch; margin-top: 14px; font-size: 18px; }
-
-  /* tiers: one RAM gauge, the four flushes hang off it. The gauge lands in hard colour steps, like the hero's drain. */
-  .gauge { margin-top: 56px; }
-  .bar { height: 14px; border-radius: 999px; display: grid; grid-template-columns: 80fr 10fr 6fr 4fr; overflow: hidden; gap: 3px; }
-  .bar span:nth-child(1) { background: var(--t1); --i: 0; } .bar span:nth-child(2) { background: var(--t2); --i: 1; }
-  .bar span:nth-child(3) { background: var(--t3); --i: 2; } .bar span:nth-child(4) { background: var(--t4); --i: 3; }
-  .js .gauge .bar span { opacity: 0; }
-  .js .gauge.in .bar span { animation: step .01s linear both; animation-delay: calc(var(--i) * 90ms); }
-  @keyframes step { from { opacity: 0; } to { opacity: 1; } }
-  .scale { display: grid; grid-template-columns: 80fr 10fr 6fr 4fr; font-size: 13px; color: var(--muted); margin-top: 8px; font-variant-numeric: tabular-nums; }
-  .tiers { display: grid; grid-template-columns: 1.15fr 1fr; gap: 40px; margin-top: 48px; align-items: start; }
-  .tier-list { display: grid; gap: 26px; }
-  .tier { display: grid; grid-template-columns: 12px 1fr; gap: 16px; }
-  .tier::before { content: ""; width: 12px; border-radius: 6px; background: var(--c); }
-  .tier h3 { font-size: 20px; letter-spacing: -.01em; }
-  .tier p { color: var(--muted); }
-  .tier .range { font-size: 14px; color: var(--c); font-weight: 700; font-variant-numeric: tabular-nums; }
-  .tiers figure { border-radius: var(--r); overflow: hidden; background: #0a0f17; border: 1px solid var(--line); }
-  .tiers figure video { width: 100%; height: auto; aspect-ratio: 1; display: block; }
-  .tiers figcaption { color: var(--muted); font-size: 14px; padding: 10px 14px 12px; background: var(--bg-2); }
-
-  .clogged { margin-top: 40px; display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: center; border: 1px solid var(--t4); border-radius: var(--r); padding: 28px 32px; }
-  .clogged .range { font-size: 14px; color: var(--t4); font-weight: 700; font-variant-numeric: tabular-nums; }
-  .clogged h3 { font-size: 26px; letter-spacing: -.015em; }
-  .clogged p { color: var(--muted); max-width: 52ch; }
-  .plunger { width: 84px; height: 110px; overflow: visible; }
-  .plunger .push { transform-box: fill-box; }
-  .in .plunger .push { animation: push 2.4s cubic-bezier(.45, 0, .55, 1) infinite; }
-  @keyframes push { 0%, 12% { transform: translateY(-14px); } 22% { transform: translateY(10px); } 34%, 44% { transform: translateY(-14px); } 54% { transform: translateY(10px); } 66%, 76% { transform: translateY(-14px); } 86% { transform: translateY(14px); } 100% { transform: translateY(-14px); } }
-
-  /* features: a ledger, name left, claim right */
-  .ledger { margin-top: 48px; border-top: 1px solid var(--line); }
-  .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 32px; padding: 26px 0; border-bottom: 1px solid var(--line); }
-  .row h3 { font-size: 20px; letter-spacing: -.01em; }
-  .row.first h3 { color: var(--accent); font-size: 24px; }
-  .claim { color: var(--muted); max-width: 62ch; }
-  .row.first .claim { color: var(--text); }
-  kbd { font: 600 13px ui-monospace, "Cascadia Mono", Consolas, monospace; padding: 2px 7px; border-radius: 6px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); }
-  @media (prefers-color-scheme: light) { kbd { border-color: rgba(13,22,32,.28); background: rgba(13,22,32,.06); } }
-
-  /* a working replica of the widget, on a taskbar strip */
-  .demo { margin-top: 18px; display: grid; gap: 14px; }
-  .demo label { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; color: var(--text); font-size: 15px; }
-  .demo-note { color: var(--muted); font-size: 13px; }
-  .taskbar { position: relative; height: 96px; border-radius: 10px; background: #101827; border: 1px solid var(--line); overflow: hidden; }
-  .taskbar::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: #0b111a; border-top: 1px solid #1c2735; }
-  .taskbar .dots { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex; gap: 10px; z-index: 1; }
-  .taskbar .dots i { width: 20px; height: 20px; border-radius: 6px; background: #1f2b3b; }
-  .widget { position: absolute; right: 14px; bottom: 44px; width: 210px; padding: 9px 12px 10px; border-radius: 9px; background: #111827; color: #fff; font-variant-numeric: tabular-nums;
-            box-shadow: 0 6px 18px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.07); z-index: 2; }
-  .widget .wrow { display: flex; justify-content: space-between; align-items: baseline; }
-  .widget b { font-size: 17px; } .widget small { font-size: 12px; opacity: .85; }
-  .widget .track { height: 4px; background: #374151; border-radius: 2px; margin-top: 7px; overflow: hidden; }
-  .widget .fill { height: 100%; border-radius: 2px; transition: width .35s var(--ease), background-color .35s; }
-
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 48px; border-top: 1px solid var(--line); }
-  .step { padding: 28px 28px 0 0; display: grid; grid-template-columns: auto 1fr; column-gap: 16px; align-items: start; }
-  .step b { font-size: 44px; line-height: 1; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: -.04em; }
-  .step h3 { font-size: 20px; }
-  .step p { color: var(--muted); margin-top: 6px; }
-  .note { margin-top: 32px; color: var(--muted); font-size: 15px; max-width: 70ch; }
-  .callout { margin-top: 40px; border-left: 3px solid var(--t2); padding: 4px 0 4px 18px; max-width: 70ch; }
-  .callout strong { display: block; font-size: 16px; }
-  .callout p { color: var(--muted); font-size: 15px; margin-top: 2px; }
-
-  footer { border-top: 1px solid var(--line); padding: 40px 0 48px; color: var(--muted); font-size: 14px; }
-  footer .wrap { display: grid; grid-template-columns: 1fr 2fr; gap: 32px 48px; }
-  footer .col { display: grid; gap: 8px; align-content: start; }
-  footer .col h4 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--text); font-weight: 700; }
-  footer a { color: inherit; }
-  footer .more { display: flex; flex-wrap: wrap; gap: 4px 14px; }
-  footer .more a { text-underline-offset: 3px; }
-  footer .ar { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 20px; }
-
-  /* content is visible by default; .reveal only hides when the page script has added .reveal-on */
-  .reveal-on .reveal { opacity: 0; transform: translateY(10px); transition: opacity .35s var(--ease), transform .35s var(--ease); }
-  .reveal-on .reveal.in { opacity: 1; transform: none; }
-  @media (prefers-reduced-motion: reduce) {
-    .reveal-on .reveal { opacity: 1; transform: none; transition: none; }
-    html { scroll-behavior: auto; }
-    .widget .fill { transition: none; }
-    .stage video { display: none; }
-    .stage .still { display: block; }
-    .js .gauge .bar span { opacity: 1; animation: none !important; }
-    .plunger .push { animation: none !important; }
-  }
-
-  @media (max-width: 860px) {
-    .hero, .tiers { grid-template-columns: minmax(0, 1fr); }
-    .hero > *, .tiers > * { min-width: 0; }
-    .wrap { padding-left: 16px; padding-right: 16px; }
-    section.wrap:not(.hero) { padding-top: 64px; padding-bottom: 64px; }
-    nav .btn { padding: 9px 14px; }
-    .hero { min-height: 0; padding-top: 16px; padding-bottom: 48px; gap: 28px; }
-    h1 { font-size: 36px; }
-    .lede { font-size: 17px; margin: 14px 0 20px; }
-    .ctas .btn-primary { width: 100%; justify-content: center; text-align: center; }
-    .clogged { grid-template-columns: minmax(0, 1fr); padding: 22px; }
-    .plunger { display: none; }
-    .row { grid-template-columns: minmax(0, 1fr); gap: 6px; }
-    .steps { grid-template-columns: 1fr; }
-    .step { padding-right: 0; padding-bottom: 8px; }
-    .widget { right: 8px; width: min(210px, calc(100% - 16px)); }
-    footer .wrap { grid-template-columns: minmax(0, 1fr); }
-    .nav-links a:not(.btn) { display: none; }
-  }
-</style>
+<link rel="stylesheet" href="site.css">
 </head>
 <body>
 <header class="wrap">
   <nav>
     <a class="brand" href="#"><img src="logo.png" alt="NJ-Flush logo" width="32" height="32">NJ-Flush</a>
     <div class="nav-links">
-      <a href="#tiers">How it flushes</a>
-      <a href="#features">Features</a>
-      <a href="https://github.com/NJ-Burrito/NJ-Flush">Source</a>
+      <a href="#flushes">Flushes</a><a href="#panel">Panel</a><a href="#guard">Guard</a><a href="#widget">Widget</a>
+      <a class="lang" href="ar/" hreflang="ar" lang="ar">العربية</a>
       <a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><svg class="ico" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 17h12"/></svg>Download</a>
     </div>
   </nav>
@@ -301,109 +150,180 @@
 <main>
   <section class="wrap hero">
     <div>
-      <h1><span class="kicker">NJ-Flush, the free Windows RAM cleaner</span>Your RAM is full. <em>Flush it.</em></h1>
-      <p class="lede">One double-click hands memory back to Windows, while a toilet flushes on your screen.</p>
+      <h1><span class="kicker">NJ-Flush 1.3, the free Windows memory cleaner</span>Your PC is clogged. <em>Flush it.</em></h1>
+      <p class="lede">Frees RAM, calms the CPU and restarts the GPU, each from one button or one shortcut, and makes it fun to watch.</p>
       <div class="ctas">
-        <a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><svg class="ico" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 17h12"/></svg>Download NJ-Flush.exe, Windows 10 or 11</a>
+        <a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><svg class="ico" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 17h12"/></svg><span>Download NJ-Flush.exe, Windows 10 or 11</span></a>
         <a class="btn btn-ghost" href="https://github.com/NJ-Burrito/NJ-Flush">Source</a>
       </div>
-      <p class="proof">Free, MIT licence, one file, no installer</p>
+      <p class="proof">Free, open source, MIT licence, one file, no installer. Not code-signed yet, see the SmartScreen note below.</p>
     </div>
     <div class="stage">
-      <video id="hero-video" width="1080" height="1080" poster="hero-poster.jpg" autoplay muted loop playsinline preload="auto"
-             aria-label="A toilet full of red water is plunged, bursts free and drains through the four tier colours to clean cyan. Your RAM is full. One double-click. Flushed.">
+      <video id="hero-video" width="1080" height="1080" poster="hero-poster.jpg" autoplay muted loop playsinline preload="auto" aria-label="A toilet full of red water is plunged, bursts free and drains through the four tier colours to clean cyan. Your RAM is full. One double-click. Flushed.">
         <source src="hero.mp4" type="video/mp4">
         <source src="hero.webm" type="video/webm">
       </video>
-      <img class="still" src="hero-still.jpg" alt="A clean cyan toilet bowl with a check mark and the words Flushed. Memory back to Windows." width="1080" height="1080" loading="lazy" decoding="async">
-    </div>
-  </section>
-  <script>
-    // reduced motion: no autoplay, the payoff still stands in for the video
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { const v = document.getElementById('hero-video'); if (v) { v.pause(); v.remove(); } }
-  </script>
-
-  <section class="wrap" id="tiers">
-    <h2 class="reveal">The fuller your RAM, the harder it flushes.</h2>
-    <p class="sub reveal">NJ-Flush reads your memory before it starts and picks one of four flushes. The flush itself always does the full job.</p>
-    <div class="gauge reveal" aria-hidden="true">
-      <div class="bar"><span></span><span></span><span></span><span></span></div>
-      <div class="scale"><span>0%</span><span>80%</span><span>90%</span><span>96%</span></div>
-    </div>
-    <div class="tiers">
-      <div class="tier-list">
-        <div class="tier reveal" style="--c:var(--t1)"><div><div class="range">under 80%</div><h3>Light flush</h3><p>One press, a gentle half drain, a quick refill.</p></div></div>
-        <div class="tier reveal" style="--c:var(--t2)"><div><div class="range">80 to 89%</div><h3>Medium flush</h3><p>The full swirl, all the way down the drain.</p></div></div>
-        <div class="tier reveal" style="--c:var(--t3)"><div><div class="range">90 to 95%</div><h3>Heavy flush</h3><p>Murky water, two presses, the bowl shakes and splashes.</p></div></div>
-      </div>
-      <figure class="reveal">
-        <video id="heavy-video" width="360" height="360" poster="heavy-still.jpg" muted loop playsinline preload="none"
-               aria-label="The heavy flush: amber water swirls down while the bowl shakes">
-          <source src="heavy.mp4" type="video/mp4">
-          <source src="heavy.webm" type="video/webm">
-        </video>
-        <figcaption>The heavy flush, at 93% RAM.</figcaption>
-      </figure>
-    </div>
-    <div class="clogged reveal">
-      <div>
-        <div class="range">96% and up</div>
-        <h3>Clogged</h3>
-        <p>The water rises, the press fails, the plunger goes in three times, then it bursts free.</p>
-      </div>
-      <svg class="plunger" viewBox="0 0 84 110" aria-hidden="true">
-        <g class="push">
-          <rect x="38" y="0" width="8" height="62" rx="4" fill="#d6a36a"/>
-          <path d="M6 100c0-24 14-40 36-40s36 16 36 40z" fill="#ef4444"/>
-          <rect x="2" y="96" width="80" height="8" rx="4" fill="#b91c1c"/>
-        </g>
-      </svg>
+      <img class="still" src="hero-poster.jpg" alt="A clean cyan toilet bowl with a check mark and the words Flushed. Memory back to Windows." width="1080" height="1080" loading="lazy" decoding="async">
     </div>
   </section>
 
-  <section class="wrap" id="features">
-    <h2 class="reveal">It sits above your clock and waits.</h2>
-    <div class="ledger">
-      <div class="row first reveal">
-        <h3>It really frees the memory</h3>
-        <p class="claim">Empties every working set, writes the modified list to disk, purges the standby cache and stops leftover helper processes from closed developer sessions. Nothing else is touched.</p>
+  <section class="wrap" id="flushes">
+    <div class="eyebrow reveal">Four flushes</div>
+    <h2 class="reveal">Four flushes, four animations.</h2>
+    <p class="sub reveal">Each flush has its own scene and its own sound on screen, in four variants that match how bad things are.</p>
+    <div class="flushes">
+      <article class="flush reveal" style="--c:var(--c-ram)">
+        <figure><video class="clip" width="360" height="360" poster="clips/ram.jpg" muted loop playsinline preload="none" aria-label="The RAM flush: a toilet flushing.">
+          <source src="clips/ram.mp4" type="video/mp4"><source src="clips/ram.webm" type="video/webm"></video></figure>
+        <h3><span>RAM</span><span class="scene">A toilet</span></h3>
+        <p>Trims idle background apps, drops the low-priority cache and stops leftover helper processes. The fuller your RAM, the harder it flushes.</p>
+        <div class="chips"><span class="chip">Light</span><span class="chip">Medium</span><span class="chip">Heavy</span><span class="chip">Clogged</span></div>
+        <p class="why">Picked by how much RAM is in use.</p>
+        <p class="keys">Shortcut: <span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>R</kbd></span></p>
+      </article>
+      <article class="flush reveal" style="--c:var(--c-cpu)">
+        <figure><video class="clip" width="360" height="360" poster="clips/cpu.jpg" muted loop playsinline preload="none" aria-label="The CPU flush: an exhaust fan pulling out hot steam.">
+          <source src="clips/cpu.mp4" type="video/mp4"><source src="clips/cpu.webm" type="video/webm"></video></figure>
+        <h3><span>CPU</span><span class="scene">An exhaust fan</span></h3>
+        <p>Puts apps that kept a CPU core busy for a full minute into efficiency mode. Never the app you are using. Restore undoes it.</p>
+        <div class="chips"><span class="chip">Breeze</span><span class="chip">Vent</span><span class="chip">Overheat</span><span class="chip">Meltdown</span></div>
+        <p class="why">Picked by CPU load, or by how many apps were busy.</p>
+        <p class="keys">Shortcut: <span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>C</kbd></span></p>
+      </article>
+      <article class="flush reveal" style="--c:var(--c-gpu)">
+        <figure><video class="clip" width="360" height="360" poster="clips/gpu.jpg" muted loop playsinline preload="none" aria-label="The GPU flush: a steamed mirror wiped clean.">
+          <source src="clips/gpu.mp4" type="video/mp4"><source src="clips/gpu.webm" type="video/webm"></video></figure>
+        <h3><span>GPU</span><span class="scene">A mirror</span></h3>
+        <p>Restarts the graphics card. The screen is black for a few seconds, and apps that compute on the GPU (CUDA) may fail.</p>
+        <div class="chips"><span class="chip">Smudge</span><span class="chip">Steamy</span><span class="chip">Fogged</span><span class="chip">Frozen</span></div>
+        <p class="why">Picked by how much VRAM is in use.</p>
+        <p class="keys">Shortcut: <span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>G</kbd></span></p>
+      </article>
+      <article class="flush reveal" style="--c:var(--c-all)">
+        <figure><video class="clip" width="360" height="360" poster="clips/all.jpg" muted loop playsinline preload="none" aria-label="Flush all: a shower over the RAM, CPU and GPU.">
+          <source src="clips/all.mp4" type="video/mp4"><source src="clips/all.webm" type="video/webm"></video></figure>
+        <h3><span>All</span><span class="scene">A shower</span></h3>
+        <p>The GPU when it helps, then the CPU, then RAM. A chip ticks as each part finishes.</p>
+        <div class="chips"><span class="chip">Rinse</span><span class="chip">Shower</span><span class="chip">Scrub</span><span class="chip">Flood</span></div>
+        <p class="why">Picked by the worst of the three.</p>
+        <p class="keys">Shortcut: <span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>F</kbd></span></p>
+      </article>
+    </div>
+    <div class="tiersbox">
+      <h3 class="reveal">RAM: the fuller it is, the harder it flushes.</h3>
+      <p class="sub reveal">The RAM scene is picked by how much RAM is in use when you flush.</p>
+      <div class="gauge" aria-hidden="true">
+        <div class="bar"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="scale"><span>0%</span><span>75%</span><span></span><span>90%</span><span>96%</span></div>
       </div>
-      <div class="row reveal"><h3>Flush from anywhere</h3><p class="claim">Press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>F</kbd>, or double-click the widget.</p></div>
-      <div class="row reveal"><h3>Auto-flush</h3><p class="claim">Turn it on and NJ-Flush flushes by itself when RAM stays at 90% for 30 seconds, at most once every 10 minutes.</p></div>
-      <div class="row reveal"><h3>Memory breakdown</h3><p class="claim">One bar shows what holds your RAM: apps, kernel, cache, free, and the share no flush can reach.</p></div>
-      <div class="row reveal"><h3>Make it yours</h3><p class="claim">Right-click the widget for Settings: turn the animation or sound off, set the volume, the wait between flushes and more.</p></div>
-      <div class="row reveal">
-        <h3>The widget above your clock</h3>
-        <div>
-          <p class="claim">Live RAM, dim until you hover. Its bar takes the colour of the flush it would play. Drag the slider:</p>
-          <div class="demo">
-            <label>RAM in use <input type="range" id="ram" min="30" max="99" value="74" aria-label="RAM in use" style="width:min(320px,100%);accent-color:var(--accent)"> <span class="demo-note">Example figures, not read from your PC.</span></label>
-            <div class="taskbar" aria-hidden="true">
-              <div class="dots"><i></i><i></i><i></i><i></i></div>
-              <div class="widget" aria-live="polite">
-                <div class="wrow"><b id="w-pct">74%</b><small id="w-gb">11.73/15.85 GB</small></div>
-                <div class="track"><div class="fill" id="w-fill"></div></div>
+      <div class="tierrow"><div class="tier reveal" style="--c:var(--t1)"><div class="range">under 80%</div><h4>Light flush</h4><p>One press, a half drain.</p></div><div class="tier reveal" style="--c:var(--t2)"><div class="range">80 to 89%</div><h4>Medium flush</h4><p>The full swirl, all the way down.</p></div><div class="tier reveal" style="--c:var(--t3)"><div class="range">90 to 95%</div><h4>Heavy flush</h4><p>Murky water, two presses, the bowl shakes and splashes.</p></div><div class="tier reveal" style="--c:var(--t4)"><div class="range">96% and up</div><h4>Clogged</h4><p>The water rises, the press fails, a plunger goes in three times, then it bursts free.</p></div></div>
+      <p class="fine reveal">Below 75% RAM in use (Settings, Flush RAM from) a RAM flush does nothing and says so.</p>
+    </div>
+  </section>
+
+  <section class="wrap" id="gentle">
+    <div class="eyebrow reveal">Gentle by default</div>
+    <h2 class="reveal">Clears the RAM cache, gently.</h2>
+    <p class="sub reveal">Version 1.2 emptied every app's memory at once, and on a PC with a slow disk that turned into freezes. The 1.3 RAM flush is gentle.</p>
+    <div class="two">
+      <div class="facts"><div class="fact reveal"><h3>Does nothing under 75%</h3><p>Below 75% RAM in use a RAM flush does nothing and says so. The cache it would throw away is free memory already, and throwing it away makes the next minutes slower. Change the level in Settings.</p></div><div class="fact reveal"><h3>Trims one app at a time</h3><p>Idle background apps (under 2% of a core, 64 MB or more, never the app in front, Explorer or Windows' own processes) are trimmed one by one, then the low-priority cache is dropped.</p></div><div class="fact reveal"><h3>Deep flush, when you ask</h3><p>The 1.2 flush is still on the RAM page as Deep flush. It empties every working set, writes changed pages to disk and clears the standby list. Slower for minutes after, so use it rarely.</p></div></div>
+      <div class="reveal">
+        <table class="ab">
+          <caption>Same PC, same open apps, 60 seconds after the flush.</caption>
+          <thead><tr><th scope="col"></th><th scope="col">1.2.5 flush</th><th scope="col">1.3 flush</th></tr></thead>
+          <tbody><tr><td>Pages read from disk per second, median</td><td>4,130</td><td>139</td></tr><tr><td>Pages read from disk per second, peak</td><td>50,623</td><td>3,993</td></tr><tr><td>Back to the normal level (median 247)</td><td>not within 60 s</td><td>at once</td></tr><tr><td>Modified page list, peak</td><td>4,474 MB</td><td>948 MB</td></tr><tr><td>Slow hard disk queue, peak</td><td>5</td><td>1</td></tr><tr><td>File Explorer killed (Winlogon event 1002)</td><td>yes</td><td>no</td></tr><tr><td>Slowest Notepad launch</td><td>296 ms</td><td>276 ms</td></tr></tbody>
+        </table>
+        <p class="fine">One PC, one run each: a load comparison, not a reproduction of the freeze. The 1.2.5 run came after an earlier flush that had already purged part of the cache, and the 1.3 run was forced at 32% RAM; in normal use 1.3 does nothing under 75%. Every Notepad launch stayed under 1.5 s in both. <a href="https://github.com/NJ-Burrito/NJ-Flush/blob/main/design/ab-2026-11-27.md">Full notes</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap" id="panel">
+    <div class="eyebrow reveal">The panel</div>
+    <h2 class="reveal">A panel that works like Task Manager.</h2>
+    <p class="sub reveal">Double-click NJ-Flush.exe, the widget or the hidden icon, or press <span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>P</kbd></span>. One tile per part on the left, the page on the right, Settings underneath.</p>
+    <div class="tabs" role="tablist" aria-label="The panel"><button class="tab" role="tab" id="tab-ram" aria-controls="shot-ram" aria-selected="true" tabindex="0" style="--c:var(--c-ram)">RAM</button><button class="tab" role="tab" id="tab-cpu" aria-controls="shot-cpu" aria-selected="false" tabindex="-1" style="--c:var(--c-cpu)">CPU</button><button class="tab" role="tab" id="tab-gpu" aria-controls="shot-gpu" aria-selected="false" tabindex="-1" style="--c:var(--c-gpu)">GPU</button><button class="tab" role="tab" id="tab-set" aria-controls="shot-set" aria-selected="false" tabindex="-1" style="--c:var(--accent)">Settings</button></div>
+    <div class="shots">
+      <div class="shot" id="shot-ram" role="tabpanel" aria-labelledby="tab-ram">
+        <div class="frame"><img src="shots/panel-ram.png" width="984" height="701" alt="The RAM page of the NJ-Flush panel: a 60-second graph, a memory breakdown bar, the Flush RAM and Deep flush buttons." loading="lazy" decoding="async"></div>
+        <p class="cap">RAM: a 60-second graph, the apps using the most memory, where your RAM is, Flush RAM and Deep flush.</p>
+      </div>
+      <div class="shot" id="shot-cpu" role="tabpanel" aria-labelledby="tab-cpu">
+        <div class="frame"><img src="shots/panel-cpu.png" width="984" height="701" alt="The CPU page of the NJ-Flush panel: load graph, the apps using the most CPU, the Calm CPU button." loading="lazy" decoding="async"></div>
+        <p class="cap">CPU: load, the apps busy for a full minute, and Calm or Restore for each app.</p>
+      </div>
+      <div class="shot" id="shot-gpu" role="tabpanel" aria-labelledby="tab-gpu">
+        <div class="frame"><img src="shots/panel-gpu.png" width="984" height="701" alt="The GPU page of the NJ-Flush panel: VRAM and load graph, the apps holding the most VRAM, the Restart GPU button." loading="lazy" decoding="async"></div>
+        <p class="cap">GPU: VRAM and load, the apps holding the most VRAM, Restart GPU.</p>
+      </div>
+      <div class="shot" id="shot-set" role="tabpanel" aria-labelledby="tab-set">
+        <div class="frame"><img src="shots/panel-settings.png" width="984" height="701" alt="The Settings page of the NJ-Flush panel." loading="lazy" decoding="async"></div>
+        <p class="cap">Settings: animations, sound, the 75% level, wait between flushes, auto-flush, shortcuts and language. Every change is saved at once.</p>
+      </div>
+    </div>
+    <div class="bullets reveal"><p><strong>Task Manager habits</strong>Tiles on the left, the chosen page on the right: a big value, a 60-second graph, the top apps with End, and the page's own flush button counting down its wait.</p><p><strong>Flush all is always there</strong>The bottom bar keeps Flush all, with its shortcut, on every page.</p><p><strong>Nothing moves under your mouse</strong>Lists do not refresh under the pointer, so a button never moves while you aim at it.</p></div>
+  </section>
+
+  <section class="wrap" id="guard">
+    <div class="split">
+      <div class="copy">
+        <div class="eyebrow guard-h reveal">Efficiency guard</div>
+        <h2 class="reveal">Keeps your browser fast when you come back to it.</h2>
+        <p class="reveal">Windows 11 puts apps it thinks are in the background into efficiency mode: lowest priority, slow cores. Browsers and editors then stutter and load slowly when you return to them.</p>
+        <ul class="checks reveal"><li>Keeps the apps on its list out of efficiency mode, checking every 3 seconds. The browsers are on it by default.</li><li>No admin rights, no service, no driver, almost no CPU.</li><li>The Efficiency guard page shows what Windows has throttled right now, and adds any app with one click.</li><li>Rests while the PC is on battery, because efficiency mode saves battery (a setting).</li></ul>
+        
+      </div>
+      <figure class="reveal"><div class="frame"><img src="shots/panel-guard.png" width="984" height="701" alt="The Efficiency guard page of the NJ-Flush panel: the apps Windows has put in efficiency mode, with a switch to keep each one out." loading="lazy" decoding="async"></div></figure>
+    </div>
+  </section>
+
+  <section class="wrap" id="widget">
+    <div class="eyebrow reveal">The widget</div>
+    <h2 class="reveal">A small widget above your clock.</h2>
+    <div class="widgets" style="margin-top:32px">
+      <div class="copy reveal"><p>RAM in use, with a bar in the colour of the flush it would play, and two thin bars for CPU and VRAM. It is dim until you hover; hovering shows free RAM, VRAM and the last flush.</p><p>Drag it anywhere: it keeps that spot after restarts and flushes. Double-click it to open the panel.</p><p>NJ-Flush also has an icon in the hidden icons (the ^ next to the clock): left-click opens the panel, right-click shows the menu.</p>
+        <div class="demo">
+          <label>RAM in use <input type="range" id="ram" min="30" max="99" value="74" aria-label="RAM in use" style="width:min(320px,100%);accent-color:var(--accent)"> <span class="demo-note">Example figures, not read from your PC. The real widget:</span></label>
+          <div class="taskbar" aria-hidden="true">
+            <div class="dots"><i></i><i></i><i></i><i></i></div>
+            <div class="widget">
+              <div class="wrow"><b id="w-pct">74%</b><small id="w-gb">11.73/15.85 GB</small></div>
+              <div class="track"><div class="fill" id="w-fill"></div></div>
+              <div class="mini">
+                <div><div class="m"><span>CPU</span><span>41%</span></div><div class="track"><div class="fill" style="width:41%;background:#a78bfa"></div></div></div>
+                <div><div class="m"><span>VRAM</span><span>26%</span></div><div class="track"><div class="fill" style="width:26%;background:#4ade80"></div></div></div>
               </div>
             </div>
           </div>
+          <img class="realwidget" src="shots/widget.png" width="448" height="144" alt="The NJ-Flush widget: RAM in use with a cyan bar, and thin CPU and VRAM bars under it." loading="lazy" decoding="async">
         </div>
+      </div>
+      <div class="reveal">
+        <h3 style="font-size:20px">Shortcuts, and you can change them</h3>
+        <table class="keytable"><tr><th scope='row'>Flush all</th><td><span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>F</kbd></span></td></tr><tr><th scope='row'>Flush RAM</th><td><span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>R</kbd></span></td></tr><tr><th scope='row'>Calm CPU</th><td><span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>C</kbd></span></td></tr><tr><th scope='row'>Reset GPU</th><td><span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>G</kbd></span></td></tr><tr><th scope='row'>Open the panel</th><td><span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>P</kbd></span></td></tr></table>
+        <p class="fine">In Settings, click a shortcut and press the new keys; the cross removes it. A shortcut another app already uses shows in red.</p>
       </div>
     </div>
   </section>
 
-  <section class="wrap" id="install">
+  <section class="wrap" id="arabic">
+    <div class="eyebrow reveal">Arabic</div>
+    <h2 class="reveal">The whole app speaks Arabic.</h2>
+    <p class="sub reveal">Panel, widget, menus and messages read right to left. Settings, Language chooses English, Arabic or Auto, which follows the Windows display language.</p>
+    <p><a class="btn btn-ghost" href="ar/" hreflang="ar" lang="ar">Read this page in Arabic</a></p>
+    <div class="pair"><figure class="reveal"><div class="frame"><img src="shots/panel-ar-ram.png" width="984" height="701" alt="The NJ-Flush panel in Arabic, right to left: the RAM page." loading="lazy" decoding="async"></div><figcaption>The panel, in Arabic.</figcaption></figure><figure class="reveal"><div class="frame"><img src="shots/widget-ar.png" width="448" height="144" alt="The NJ-Flush widget in Arabic mode." loading="lazy" decoding="async"></div><figcaption>The widget.</figcaption></figure></div>
+  </section>
+
+  <section class="wrap" id="download">
+    <div class="eyebrow reveal">Download</div>
     <h2 class="reveal">One download, one admin prompt.</h2>
-    <div class="steps">
-      <div class="step reveal"><b>1</b><div><h3>Download</h3><p>Get <code>NJ-Flush.exe</code> from the latest release. One file, no installer.</p></div></div>
-      <div class="step reveal"><b>2</b><div><h3>Approve once</h3><p>The first run asks for admin rights one time, to register the task a RAM flush needs.</p></div></div>
-      <div class="step reveal"><b>3</b><div><h3>Flush</h3><p>From then on, every double-click flushes with no prompt at all.</p></div></div>
-    </div>
+    <div class="steps"><div class="step reveal"><b>1</b><div><h3>Download</h3><p>Get <code>NJ-Flush.exe</code> from the latest release. One file, no installer.</p></div></div><div class="step reveal"><b>2</b><div><h3>Approve once</h3><p>The first run asks for admin approval one time. NJ-Flush copies itself to <code>%LOCALAPPDATA%\NJ-Flush</code> and registers a scheduled task that runs with the rights a flush needs.</p></div></div><div class="step reveal"><b>3</b><div><h3>Open the panel</h3><p>From then on a double-click opens the panel, and every flush runs with no prompt at all.</p></div></div></div>
     <div class="callout reveal">
       <strong>SmartScreen may ask on the first run</strong>
       <p>The file is not code-signed yet. Choose More info, then Run anyway.</p>
     </div>
-    <p class="note reveal">Windows 10 or 11. NJ-Flush tells you when a new version is out and updates itself in one click. Uninstall any time from the widget's menu.</p>
-    <p class="note reveal">The setting <strong>Restart File Explorer on flush</strong> frees Explorer's memory but can shuffle your desktop icons; <a href="https://nj-burrito.github.io/NJ-Sort/">NJ-Sort</a>, a companion tool, keeps Windows desktop icons where you put them and puts them back after NJ-Flush restarts File Explorer.</p>
+    <p class="dl reveal"><a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><svg class="ico" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 17h12"/></svg><span>Download NJ-Flush.exe, Windows 10 or 11</span></a></p>
+    <p class="note reveal">Windows 10 or 11. NJ-Flush tells you when a new version is out and updates itself in one click, after checking its SHA-256. Uninstall any time from the widget's menu.</p><p class="note reveal">What a flush cannot do: memory held by drivers, the hypervisor, Memory Integrity or page tables cannot be flushed. The memory breakdown on the RAM page shows how much of that there is.</p><p class="note reveal">The setting <strong>Restart File Explorer on flush</strong> is off by default since 1.3. If you turn it on it can shuffle your desktop icons; <a href="https://nj-burrito.github.io/NJ-Sort/">NJ-Sort</a>, a companion tool, keeps Windows desktop icons where you put them and puts them back after NJ-Flush restarts File Explorer.</p>
   </section>
 </main>
 
@@ -419,26 +339,9 @@
       <h4>More by NJ-Burrito</h4>
       <div class="more"><a href="https://nj-burrito.github.io/">Nader Alzghoul's portfolio</a> <a href="https://nj-burrito.github.io/QA-Wrap/">QA-Wrap</a> <a href="https://nj-burrito.github.io/Business-Wrap/">Business-Wrap</a> <a href="https://nj-burrito.github.io/NJ-Kit/">NJ-Kit</a> <a href="https://nj-burrito.github.io/NJ-Whip/">NJ-Whip</a> <a href="https://nj-burrito.github.io/Profile-Wrap/">Profile-Wrap</a> <a href="https://nj-burrito.github.io/story-wrap/">Story-Wrap</a> (<a href="https://github.com/NJ-Burrito/Story-Wrap">repo</a>) <a href="https://nj-burrito.github.io/NJ-Flush/">NJ-Flush</a> <a href="https://nj-burrito.github.io/NJ-Sort/">NJ-Sort</a></div>
     </div>
-    <p class="ar" lang="ar" dir="rtl">NJ-Flush أداة مجانية مفتوحة المصدر لتفريغ ذاكرة RAM في ويندوز بنقرة مزدوجة واحدة، من تطوير نادر الزغول (NJ-Burrito)، مهندس أتمتة اختبارات الجودة في عمّان، الأردن.</p>
+    <div class="alt"><p class="alt" lang="ar" dir="rtl"><bdi dir="ltr">NJ-Flush</bdi> أداة مجانية مفتوحة المصدر لتفريغ ذاكرة <bdi dir="ltr">RAM</bdi> وتهدئة المعالج وإعادة تشغيل بطاقة الرسوميات في <bdi dir="ltr">Windows</bdi>، من تطوير نادر الزغول (<bdi dir="ltr">NJ-Burrito</bdi>)، مهندس أتمتة اختبارات الجودة في عمّان، الأردن. <a href="ar/" hreflang="ar">النسخة العربية من الموقع</a>.</p></div>
   </div>
 </footer>
-
-<script>
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // reveal on scroll (IntersectionObserver, no scroll listener). Content stays visible if this script never runs.
-  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .2 });
-  document.documentElement.classList.add('reveal-on');
-  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
-  // heavy flush clip: loads and plays only while on screen; reduced motion keeps the still poster
-  const hv = document.getElementById('heavy-video');
-  if (hv && !reduced) {
-    new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { hv.preload = 'auto'; hv.play().catch(() => {}); } else hv.pause(); }), { threshold: .25 }).observe(hv);
-  }
-  // widget replica: same colour rule as the app (cyan < 80, yellow < 90, orange < 96, red)
-  const ram = document.getElementById('ram'), pct = document.getElementById('w-pct'), gb = document.getElementById('w-gb'), fill = document.getElementById('w-fill');
-  const tint = p => p >= 96 ? '#f87171' : p >= 90 ? '#fb923c' : p >= 80 ? '#facc15' : '#22d3ee';
-  function draw() { const p = +ram.value; pct.textContent = p + '%'; gb.textContent = (15.85 * p / 100).toFixed(2) + '/15.85 GB'; fill.style.width = p + '%'; fill.style.background = tint(p); }
-  ram.addEventListener('input', draw); draw();
-</script>
+<script src="site.js" defer></script>
 </body>
 </html>

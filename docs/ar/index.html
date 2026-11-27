@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NJ-Flush: أداة مجانية لتفريغ ذاكرة RAM في Windows 11 بملف واحد</title>
+<meta name="description" content="أداة مجانية مفتوحة المصدر لتنظيف ذاكرة RAM (الرام) في Windows 10 و11: فرّغ الذاكرة وهدّئ المعالج وأعد تشغيل بطاقة الرسوميات، مع تفريغ تراه أمامك. ملف واحد دون مثبّت.">
+<meta name="keywords" content="تنظيف الرام، تفريغ ذاكرة RAM، تفريغ الذاكرة في ويندوز 11، تنظيف ذاكرة الكمبيوتر، أداة مجانية، NJ-Flush">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#0a0f17">
+<meta name="author" content="Nader Alzghoul (NJ-Burrito)">
+<link rel="canonical" href="https://nj-burrito.github.io/NJ-Flush/ar/">
+<link rel="alternate" hreflang="en" href="https://nj-burrito.github.io/NJ-Flush/">
+<link rel="alternate" hreflang="ar" href="https://nj-burrito.github.io/NJ-Flush/ar/">
+<link rel="alternate" hreflang="x-default" href="https://nj-burrito.github.io/NJ-Flush/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="NJ-Burrito">
+<meta property="og:title" content="NJ-Flush: أداة مجانية لتفريغ ذاكرة RAM في Windows 11 بملف واحد">
+<meta property="og:description" content="أداة مجانية مفتوحة المصدر لتنظيف ذاكرة RAM (الرام) في Windows 10 و11: فرّغ الذاكرة وهدّئ المعالج وأعد تشغيل بطاقة الرسوميات، مع تفريغ تراه أمامك. ملف واحد دون مثبّت.">
+<meta property="og:url" content="https://nj-burrito.github.io/NJ-Flush/ar/">
+<meta property="og:image" content="https://nj-burrito.github.io/NJ-Flush/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:secure_url" content="https://nj-burrito.github.io/NJ-Flush/og-image.png">
+<meta property="og:image:alt" content="NJ-Flush، أداة مجانية لتفريغ ذاكرة RAM في Windows: مرحاض بمياه زرقاء نظيفة وعلامة صح وكلمة Flushed">
+<meta property="og:locale" content="ar_JO">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="NJ-Flush: أداة مجانية لتفريغ ذاكرة RAM في Windows 11 بملف واحد">
+<meta name="twitter:description" content="أداة مجانية مفتوحة المصدر لتنظيف ذاكرة RAM (الرام) في Windows 10 و11: فرّغ الذاكرة وهدّئ المعالج وأعد تشغيل بطاقة الرسوميات، مع تفريغ تراه أمامك. ملف واحد دون مثبّت.">
+<meta name="twitter:image" content="https://nj-burrito.github.io/NJ-Flush/og-image.png">
+<meta name="twitter:image:alt" content="NJ-Flush، أداة مجانية لتفريغ ذاكرة RAM في Windows: مرحاض بمياه زرقاء نظيفة وعلامة صح وكلمة Flushed">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://nj-burrito.github.io/NJ-Flush/#app",
+   "name": "NJ-Flush",
+   "alternateName": [
+    "NJ Flush",
+    "nj-flush",
+    "nj_flush",
+    "NJ_Flush",
+    "NJFlush",
+    "نج فلش"
+   ],
+   "description": "أداة مجانية مفتوحة المصدر لتنظيف ذاكرة RAM (الرام) في Windows 10 و11: فرّغ الذاكرة وهدّئ المعالج وأعد تشغيل بطاقة الرسوميات، مع تفريغ تراه أمامك. ملف واحد دون مثبّت.",
+   "url": "https://nj-burrito.github.io/NJ-Flush/ar/",
+   "downloadUrl": "https://github.com/NJ-Burrito/NJ-Flush/releases/latest",
+   "codeRepository": "https://github.com/NJ-Burrito/NJ-Flush",
+   "softwareVersion": "1.3.0",
+   "applicationCategory": "UtilitiesApplication",
+   "operatingSystem": "Windows 10, Windows 11",
+   "image": [
+    "https://nj-burrito.github.io/NJ-Flush/og-image.png",
+    "https://nj-burrito.github.io/NJ-Flush/logo-1024.png"
+   ],
+   "screenshot": "https://nj-burrito.github.io/NJ-Flush/shots/panel-ram.png",
+   "featureList": [
+    "أربعة أنواع من التفريغ: ذاكرة RAM والمعالج وبطاقة الرسوميات والكل، لكلٍّ رسم متحرك بأربع صيغ",
+    "تفريغ لطيف لذاكرة RAM لا يفعل شيئًا تحت 75% من الذاكرة المستخدمة",
+    "التفريغ العميق يفرّغ مجموعات العمل كلها ويكتب الصفحات المعدّلة ويفرّغ قائمة الاستعداد",
+    "لوحة تشبه مدير المهام بصفحات ذاكرة RAM والمعالج وبطاقة الرسوميات وحارس الكفاءة والإعدادات",
+    "حارس الكفاءة يُبقي المتصفحات والتطبيقات المختارة خارج وضع الكفاءة في Windows 11",
+    "ودجت قابل للسحب بأشرطة ذاكرة RAM والمعالج وذاكرة الرسوميات، وأيقونة في الأيقونات المخفية",
+    "اختصارات لوحة مفاتيح قابلة للتغيير",
+    "واجهة عربية كاملة من اليمين إلى اليسار",
+    "تحديث ذاتي مع التحقق من SHA-256"
+   ],
+   "license": "https://opensource.org/licenses/MIT",
+   "isAccessibleForFree": true,
+   "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+   },
+   "author": {
+    "@id": "https://nj-burrito.github.io/#person"
+   },
+   "inLanguage": "ar"
+  },
+  {
+   "@type": "VideoObject",
+   "@id": "https://nj-burrito.github.io/NJ-Flush/ar/#hero-video",
+   "name": "مقطع NJ-Flush: تفريغ ذاكرة RAM المسدودة ثم صفاء المياه",
+   "description": "مرحاض مملوء بمياه حمراء تُفتح سدّته ثلاث مرات ثم تنفجر وتنصرف المياه عبر ألوان المستويات الأربعة حتى تصفو زرقاء. ذاكرة RAM ممتلئة. نقرة مزدوجة واحدة. تم التفريغ.",
+   "thumbnailUrl": "https://nj-burrito.github.io/NJ-Flush/hero-poster.jpg",
+   "contentUrl": "https://nj-burrito.github.io/NJ-Flush/hero.mp4",
+   "uploadDate": "2026-11-27",
+   "encodingFormat": "video/mp4",
+   "inLanguage": "ar"
+  },
+  {
+   "@type": "Person",
+   "@id": "https://nj-burrito.github.io/#person",
+   "name": "Nader Alzghoul",
+   "alternateName": [
+    "نادر الزغول",
+    "NJ-Burrito",
+    "NJ Burrito",
+    "NJBurrito",
+    "NJ"
+   ],
+   "jobTitle": "QA Automation Engineer",
+   "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Amman",
+    "addressCountry": "JO"
+   },
+   "url": "https://nj-burrito.github.io/",
+   "sameAs": [
+    "https://github.com/NJ-Burrito",
+    "https://nj-burrito.github.io/",
+    "https://nj-burrito.github.io/QA-Wrap/",
+    "https://nj-burrito.github.io/Business-Wrap/",
+    "https://nj-burrito.github.io/NJ-Kit/",
+    "https://nj-burrito.github.io/NJ-Whip/",
+    "https://nj-burrito.github.io/Profile-Wrap/",
+    "https://nj-burrito.github.io/story-wrap/",
+    "https://github.com/NJ-Burrito/Story-Wrap",
+    "https://nj-burrito.github.io/NJ-Flush/",
+    "https://nj-burrito.github.io/NJ-Sort/"
+   ]
+  }
+ ]
+}
+</script>
+<link rel="icon" href="../logo.png">
+<script>document.documentElement.classList.add("js")</script>
+<link rel="stylesheet" href="../site.css">
+</head>
+<body>
+<header class="wrap">
+  <nav>
+    <a class="brand" href="#"><img src="../logo.png" alt="شعار NJ-Flush" width="32" height="32">NJ-Flush</a>
+    <div class="nav-links">
+      <a href="#flushes">التفريغ</a><a href="#panel">اللوحة</a><a href="#guard">حارس الكفاءة</a><a href="#widget">الودجت</a>
+      <a class="lang" href="../" hreflang="en" lang="en">English</a>
+      <a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><svg class="ico" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 17h12"/></svg>تنزيل</a>
+    </div>
+  </nav>
+</header>
+
+<main>
+  <section class="wrap hero">
+    <div>
+      <h1><span class="kicker"><bdi dir="ltr">NJ-Flush 1.3</bdi>، الأداة المجانية لتفريغ ذاكرة <bdi dir="ltr">RAM</bdi> في <bdi dir="ltr">Windows</bdi></span>جهازك مسدود. <em>فرّغه.</em></h1>
+      <p class="lede">يفرّغ ذاكرة <bdi dir="ltr">RAM</bdi>، ويهدّئ المعالج، ويعيد تشغيل بطاقة الرسوميات، كلٌّ بزر واحد أو اختصار واحد، ويجعل مشاهدة العمل ممتعة.</p>
+      <div class="ctas">
+        <a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><svg class="ico" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 17h12"/></svg><span>تنزيل <bdi dir="ltr">NJ-Flush.exe</bdi> لنظام <bdi dir="ltr">Windows 10</bdi> أو <bdi dir="ltr">11</bdi></span></a>
+        <a class="btn btn-ghost" href="https://github.com/NJ-Burrito/NJ-Flush">المصدر</a>
+      </div>
+      <p class="proof">مجاني ومفتوح المصدر برخصة <bdi dir="ltr">MIT</bdi>، ملف واحد دون مثبّت. غير موقّع رقميًا بعد، وتجد ملاحظة <bdi dir="ltr">SmartScreen</bdi> أدناه.</p>
+    </div>
+    <div class="stage">
+      <video id="hero-video" width="1080" height="1080" poster="../hero-poster.jpg" autoplay muted loop playsinline preload="auto" aria-label="مرحاض مملوء بمياه حمراء تُفتح سدّته ثم تنفجر وتنصرف المياه عبر ألوان المستويات الأربعة حتى تصفو زرقاء. ذاكرة RAM ممتلئة. نقرة مزدوجة واحدة. تم التفريغ.">
+        <source src="../hero.mp4" type="video/mp4">
+        <source src="../hero.webm" type="video/webm">
+      </video>
+      <img class="still" src="../hero-poster.jpg" alt="مرحاض نظيف بمياه زرقاء وعلامة صح وكلمة Flushed. عادت الذاكرة إلى Windows." width="1080" height="1080" loading="lazy" decoding="async">
+    </div>
+  </section>
+
+  <section class="wrap" id="flushes">
+    <div class="eyebrow reveal">التفريغ</div>
+    <h2 class="reveal">أربعة أنواع من التفريغ، ولكلٍّ رسمه المتحرك.</h2>
+    <p class="sub reveal">لكل نوع مشهده وصوته على الشاشة، بأربع صيغ تناسب حجم المشكلة.</p>
+    <div class="flushes">
+      <article class="flush reveal" style="--c:var(--c-ram)">
+        <figure><video class="clip" width="360" height="360" poster="../clips/ram.jpg" muted loop playsinline preload="none" aria-label="تفريغ ذاكرة RAM: مرحاض تنصرف مياهه.">
+          <source src="../clips/ram.mp4" type="video/mp4"><source src="../clips/ram.webm" type="video/webm"></video></figure>
+        <h3><span>ذاكرة <bdi dir="ltr">RAM</bdi></span><span class="scene">مرحاض</span></h3>
+        <p>يقلّص التطبيقات الخاملة في الخلفية، ويتخلص من التخزين المؤقت منخفض الأولوية، ويوقف العمليات المساعدة المتبقية. وكلما امتلأت الذاكرة اشتد التفريغ.</p>
+        <div class="chips"><span class="chip">خفيف</span><span class="chip">متوسط</span><span class="chip">ثقيل</span><span class="chip">مسدود</span></div>
+        <p class="why">تُختار الصيغة بحسب نسبة ذاكرة <bdi dir="ltr">RAM</bdi> المستخدمة.</p>
+        <p class="keys">الاختصار: <span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>R</kbd></span></p>
+      </article>
+      <article class="flush reveal" style="--c:var(--c-cpu)">
+        <figure><video class="clip" width="360" height="360" poster="../clips/cpu.jpg" muted loop playsinline preload="none" aria-label="تهدئة المعالج: مروحة شفط تسحب البخار الساخن.">
+          <source src="../clips/cpu.mp4" type="video/mp4"><source src="../clips/cpu.webm" type="video/webm"></video></figure>
+        <h3><span>المعالج</span><span class="scene">مروحة شفط</span></h3>
+        <p>يضع في وضع الكفاءة التطبيقات التي شغلت نواة كاملة من المعالج لدقيقة كاملة، ولا يمسّ التطبيق الذي تستخدمه. وزر «استعادة» يلغي ذلك.</p>
+        <div class="chips"><span class="chip">نسمة</span><span class="chip">تهوية</span><span class="chip">سخونة زائدة</span><span class="chip">انصهار</span></div>
+        <p class="why">تُختار الصيغة بحسب حمل المعالج أو عدد التطبيقات المشغولة.</p>
+        <p class="keys">الاختصار: <span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>C</kbd></span></p>
+      </article>
+      <article class="flush reveal" style="--c:var(--c-gpu)">
+        <figure><video class="clip" width="360" height="360" poster="../clips/gpu.jpg" muted loop playsinline preload="none" aria-label="إعادة تشغيل بطاقة الرسوميات: مرآة يغطيها البخار ثم تُمسح.">
+          <source src="../clips/gpu.mp4" type="video/mp4"><source src="../clips/gpu.webm" type="video/webm"></video></figure>
+        <h3><span>بطاقة الرسوميات</span><span class="scene">مرآة</span></h3>
+        <p>يعيد تشغيل بطاقة الرسوميات. تبقى الشاشة سوداء لبضع ثوانٍ، وقد تُغلق التطبيقات التي تستخدم <bdi dir="ltr">CUDA</bdi>.</p>
+        <div class="chips"><span class="chip">بقعة</span><span class="chip">بخار</span><span class="chip">ضباب</span><span class="chip">تجمّد</span></div>
+        <p class="why">تُختار الصيغة بحسب ذاكرة الرسوميات المستخدمة.</p>
+        <p class="keys">الاختصار: <span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>G</kbd></span></p>
+      </article>
+      <article class="flush reveal" style="--c:var(--c-all)">
+        <figure><video class="clip" width="360" height="360" poster="../clips/all.jpg" muted loop playsinline preload="none" aria-label="تفريغ الكل: دش فوق ذاكرة RAM والمعالج وبطاقة الرسوميات.">
+          <source src="../clips/all.mp4" type="video/mp4"><source src="../clips/all.webm" type="video/webm"></video></figure>
+        <h3><span>الكل</span><span class="scene">دش</span></h3>
+        <p>بطاقة الرسوميات عند الحاجة، ثم المعالج، ثم ذاكرة <bdi dir="ltr">RAM</bdi>. وتظهر علامة صغيرة عند انتهاء كل جزء.</p>
+        <div class="chips"><span class="chip">شطف</span><span class="chip">دش</span><span class="chip">فرك</span><span class="chip">فيضان</span></div>
+        <p class="why">تُختار الصيغة بحسب أسوأ الأجزاء الثلاثة.</p>
+        <p class="keys">الاختصار: <span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>F</kbd></span></p>
+      </article>
+    </div>
+    <div class="tiersbox">
+      <h3 class="reveal">ذاكرة <bdi dir="ltr">RAM</bdi>: كلما امتلأت اشتد التفريغ.</h3>
+      <p class="sub reveal">يُختار مشهد ذاكرة <bdi dir="ltr">RAM</bdi> بحسب نسبة الذاكرة المستخدمة وقت التفريغ.</p>
+      <div class="gauge" aria-hidden="true">
+        <div class="bar"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="scale"><span>0%</span><span>75%</span><span></span><span>90%</span><span>96%</span></div>
+      </div>
+      <div class="tierrow"><div class="tier reveal" style="--c:var(--t1)"><div class="range">أقل من <bdi dir="ltr">80%</bdi></div><h4>تفريغ خفيف</h4><p>ضغطة واحدة وتصريف نصف المياه.</p></div><div class="tier reveal" style="--c:var(--t2)"><div class="range">من <bdi dir="ltr">80</bdi> إلى <bdi dir="ltr">89%</bdi></div><h4>تفريغ متوسط</h4><p>دوامة كاملة تنزل بالمياه كلها.</p></div><div class="tier reveal" style="--c:var(--t3)"><div class="range">من <bdi dir="ltr">90</bdi> إلى <bdi dir="ltr">95%</bdi></div><h4>تفريغ ثقيل</h4><p>مياه معكّرة وضغطتان، ويهتز الحوض وتتناثر المياه.</p></div><div class="tier reveal" style="--c:var(--t4)"><div class="range"><bdi dir="ltr">96%</bdi> فأكثر</div><h4>مسدود</h4><p>ترتفع المياه وتفشل الضغطة، فيدخل المكبس ثلاث مرات ثم تنفجر السدّة.</p></div></div>
+      <p class="fine reveal">تحت <bdi dir="ltr">75%</bdi> من ذاكرة <bdi dir="ltr">RAM</bdi> المستخدمة (الإعدادات، «ابدأ تفريغ ذاكرة <bdi dir="ltr">RAM</bdi> عند») لا يفعل التفريغ شيئًا ويخبرك بذلك.</p>
+    </div>
+  </section>
+
+  <section class="wrap" id="gentle">
+    <div class="eyebrow reveal">لطيف افتراضيًا</div>
+    <h2 class="reveal">يفرّغ التخزين المؤقت لذاكرة <bdi dir="ltr">RAM</bdi> بلطف.</h2>
+    <p class="sub reveal">كان الإصدار <bdi dir="ltr">1.2</bdi> يفرّغ ذاكرة كل التطبيقات دفعة واحدة، وعلى الأجهزة ذات القرص البطيء تحوّل ذلك إلى تجمّد. أما تفريغ ذاكرة <bdi dir="ltr">RAM</bdi> في الإصدار <bdi dir="ltr">1.3</bdi> فلطيف.</p>
+    <div class="two">
+      <div class="facts"><div class="fact reveal"><h3>لا يفعل شيئًا تحت <bdi dir="ltr">75%</bdi></h3><p>تحت <bdi dir="ltr">75%</bdi> من ذاكرة <bdi dir="ltr">RAM</bdi> المستخدمة لا يفعل التفريغ شيئًا ويخبرك بذلك. فالتخزين المؤقت الذي كان سيتخلص منه هو ذاكرة حرة أصلًا، والتخلص منه يُبطئ الدقائق التالية. ويمكنك تغيير هذه النسبة من الإعدادات.</p></div><div class="fact reveal"><h3>يقلّص تطبيقًا بعد تطبيق</h3><p>تُقلَّص التطبيقات الخاملة في الخلفية واحدًا بعد الآخر (أقل من <bdi dir="ltr">2%</bdi> من نواة، و<bdi dir="ltr">64 MB</bdi> أو أكثر، ولا يشمل التطبيق الأمامي ولا المستكشف ولا عمليات <bdi dir="ltr">Windows</bdi> نفسها)، ثم يُسقَط التخزين المؤقت منخفض الأولوية.</p></div><div class="fact reveal"><h3>التفريغ العميق عند الطلب</h3><p>ما زال تفريغ الإصدار <bdi dir="ltr">1.2</bdi> في صفحة ذاكرة <bdi dir="ltr">RAM</bdi> باسم «تفريغ عميق». يفرّغ مجموعات العمل كلها، ويكتب الصفحات المعدّلة على القرص، ويفرّغ قائمة الاستعداد (<bdi dir="ltr">standby</bdi>) كاملة. يُبطئ الجهاز لدقائق بعده، فاستخدمه نادرًا.</p></div></div>
+      <div class="reveal">
+        <table class="ab">
+          <caption>الجهاز نفسه والتطبيقات المفتوحة نفسها، بعد <bdi dir="ltr">60</bdi> ثانية من التفريغ.</caption>
+          <thead><tr><th scope="col"></th><th scope="col">تفريغ <bdi dir="ltr">1.2.5</bdi></th><th scope="col">تفريغ <bdi dir="ltr">1.3</bdi></th></tr></thead>
+          <tbody><tr><td>الصفحات المقروءة من القرص في الثانية (الوسيط)</td><td><bdi dir="ltr">4,130</bdi></td><td><bdi dir="ltr">139</bdi></td></tr><tr><td>الصفحات المقروءة من القرص في الثانية (الذروة)</td><td><bdi dir="ltr">50,623</bdi></td><td><bdi dir="ltr">3,993</bdi></td></tr><tr><td>العودة إلى المستوى المعتاد (وسيطه <bdi dir="ltr">247</bdi>)</td><td>لم تعد خلال <bdi dir="ltr">60</bdi> ثانية</td><td>فورًا</td></tr><tr><td>قائمة الصفحات المعدّلة (الذروة)</td><td><bdi dir="ltr">4,474 MB</bdi></td><td><bdi dir="ltr">948 MB</bdi></td></tr><tr><td>طابور القرص الصلب البطيء (الذروة)</td><td><bdi dir="ltr">5</bdi></td><td><bdi dir="ltr">1</bdi></td></tr><tr><td>إنهاء مستكشف الملفات (حدث <bdi dir="ltr">Winlogon</bdi> رقم <bdi dir="ltr">1002</bdi>)</td><td>نعم</td><td>لا</td></tr><tr><td>أبطأ تشغيل لبرنامج <bdi dir="ltr">Notepad</bdi></td><td><bdi dir="ltr">296 ms</bdi></td><td><bdi dir="ltr">276 ms</bdi></td></tr></tbody>
+        </table>
+        <p class="fine">جهاز واحد وتشغيل واحد لكل إصدار، فهي مقارنة بين الأحمال وليست إعادة لحالة التجمّد. وقد سبق تشغيل <bdi dir="ltr">1.2.5</bdi> تفريغٌ آخر أفرغ جزءًا من التخزين المؤقت، وشُغّل تفريغ <bdi dir="ltr">1.3</bdi> بالقوة عند <bdi dir="ltr">32%</bdi> من الذاكرة؛ وفي الاستخدام العادي لا يفعل <bdi dir="ltr">1.3</bdi> شيئًا تحت <bdi dir="ltr">75%</bdi>. وبقي كل تشغيل لبرنامج <bdi dir="ltr">Notepad</bdi> دون <bdi dir="ltr">1.5</bdi> ثانية في الحالتين. <a href="https://github.com/NJ-Burrito/NJ-Flush/blob/main/design/ab-2026-11-27.md">الملاحظات الكاملة (بالإنجليزية)</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap" id="panel">
+    <div class="eyebrow reveal">اللوحة</div>
+    <h2 class="reveal">لوحة تعمل كمدير المهام.</h2>
+    <p class="sub reveal">انقر مرتين على <bdi dir="ltr">NJ-Flush.exe</bdi> أو على الودجت أو على الأيقونة المخفية، أو اضغط <span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>P</kbd></span>. بطاقة لكل جزء على الجانب، والصفحة المختارة بجوارها، والإعدادات في الأسفل.</p>
+    
+    <div class="shots">
+      <div class="shot" id="shot-ram" >
+        <div class="frame"><img src="../shots/panel-ar-ram.png" width="984" height="701" alt="صفحة ذاكرة RAM في لوحة NJ-Flush بالعربية: رسم بياني لآخر 60 ثانية، وشريط توزيع الذاكرة، وزرّا تفريغ ذاكرة RAM وتفريغ عميق." loading="lazy" decoding="async"></div>
+        <p class="cap">ذاكرة <bdi dir="ltr">RAM</bdi>: رسم بياني لآخر <bdi dir="ltr">60</bdi> ثانية، والتطبيقات الأكثر استخدامًا للذاكرة، وتوزيع الذاكرة، وزرّا «تفريغ ذاكرة <bdi dir="ltr">RAM</bdi>» و«تفريغ عميق».</p>
+      </div>
+    </div>
+    <div class="bullets reveal"><p><strong>المعالج وبطاقة الرسوميات</strong>لكل منهما صفحته: الحمل، والتطبيقات الأكثر استخدامًا، وزر «تهدئة» أو «استعادة» لكل تطبيق في صفحة المعالج.</p><p><strong>تفريغ الكل في كل صفحة</strong>يبقى زر «تفريغ الكل» واختصاره في الشريط السفلي مهما كانت الصفحة.</p><p><strong>لا شيء يتحرك تحت مؤشرك</strong>لا تتجدد القوائم تحت المؤشر، فلا ينتقل الزر من مكانه وأنت تصوّب عليه.</p></div>
+  </section>
+
+  <section class="wrap" id="guard">
+    <div class="split">
+      <div class="copy">
+        <div class="eyebrow guard-h reveal">حارس الكفاءة</div>
+        <h2 class="reveal">يُبقي متصفحك سريعًا حين تعود إليه.</h2>
+        <p class="reveal">يضع <bdi dir="ltr">Windows 11</bdi> التطبيقات التي يظنها في الخلفية في وضع الكفاءة: أقل أولوية ونوى بطيئة. عندها تتقطّع المتصفحات والمحررات وتتأخر في التحميل عند العودة إليها.</p>
+        <ul class="checks reveal"><li>يُبقي التطبيقات المدرجة في قائمته خارج وضع الكفاءة، ويراجعها كل <bdi dir="ltr">3</bdi> ثوانٍ. والمتصفحات مدرجة افتراضيًا.</li><li>دون صلاحيات المسؤول، ودون خدمة أو برنامج تشغيل، وبأقل استهلاك للمعالج.</li><li>تعرض صفحة «حارس الكفاءة» ما أبطأه <bdi dir="ltr">Windows</bdi> الآن، وتضيف أي تطبيق بنقرة واحدة.</li><li>يتوقف مؤقتًا حين يعمل الجهاز على البطارية لأن وضع الكفاءة يوفّر الطاقة (إعداد يمكن تغييره).</li></ul>
+        <p class="fine">لقطة الشاشة بالواجهة الإنجليزية.</p>
+      </div>
+      <figure class="reveal"><div class="frame"><img src="../shots/panel-guard.png" width="984" height="701" alt="صفحة حارس الكفاءة في لوحة NJ-Flush: التطبيقات التي وضعها Windows في وضع الكفاءة، ومفتاح لإبقاء كل منها خارجه." loading="lazy" decoding="async"></div></figure>
+    </div>
+  </section>
+
+  <section class="wrap" id="widget">
+    <div class="eyebrow reveal">الودجت</div>
+    <h2 class="reveal">ودجت صغير فوق الساعة.</h2>
+    <div class="widgets" style="margin-top:32px">
+      <div class="copy reveal"><p>يعرض ذاكرة <bdi dir="ltr">RAM</bdi> المستخدمة بشريط بلون التفريغ الذي سيُعرض، وشريطين رفيعين للمعالج وذاكرة الرسوميات (<bdi dir="ltr">VRAM</bdi>). يخفت حتى تمرّر المؤشر عليه، فيعرض عندها الذاكرة الحرة وذاكرة الرسوميات وآخر تفريغ.</p><p>اسحبه إلى أي مكان؛ يبقى فيه بعد إعادة التشغيل والتفريغ. وانقر عليه مرتين لفتح اللوحة.</p><p>وللأداة أيضًا أيقونة في الأيقونات المخفية (السهم ^ بجوار الساعة): النقر الأيسر يفتح اللوحة، والنقر الأيمن يعرض القائمة.</p>
+        <div class="demo">
+          <label>ذاكرة <bdi dir="ltr">RAM</bdi> المستخدمة <input type="range" id="ram" min="30" max="99" value="74" aria-label="ذاكرة RAM المستخدمة" style="width:min(320px,100%);accent-color:var(--accent)"> <span class="demo-note">أرقام تجريبية وليست مقروءة من جهازك. والودجت الحقيقي:</span></label>
+          <div class="taskbar" aria-hidden="true">
+            <div class="dots"><i></i><i></i><i></i><i></i></div>
+            <div class="widget">
+              <div class="wrow"><b id="w-pct">74%</b><small id="w-gb">11.73/15.85 GB</small></div>
+              <div class="track"><div class="fill" id="w-fill"></div></div>
+              <div class="mini">
+                <div><div class="m"><span>CPU</span><span>41%</span></div><div class="track"><div class="fill" style="width:41%;background:#a78bfa"></div></div></div>
+                <div><div class="m"><span>VRAM</span><span>26%</span></div><div class="track"><div class="fill" style="width:26%;background:#4ade80"></div></div></div>
+              </div>
+            </div>
+          </div>
+          <img class="realwidget" src="../shots/widget-ar.png" width="448" height="144" alt="ودجت NJ-Flush في وضع العربية: ذاكرة RAM المستخدمة بشريط سماوي، وتحتها شريطان رفيعان للمعالج وذاكرة الرسوميات." loading="lazy" decoding="async">
+        </div>
+      </div>
+      <div class="reveal">
+        <h3 style="font-size:20px">الاختصارات، ويمكنك تغييرها</h3>
+        <table class="keytable"><tr><th scope='row'>تفريغ الكل</th><td><span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>F</kbd></span></td></tr><tr><th scope='row'>تفريغ ذاكرة <bdi dir="ltr">RAM</bdi></th><td><span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>R</kbd></span></td></tr><tr><th scope='row'>تهدئة المعالج</th><td><span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>C</kbd></span></td></tr><tr><th scope='row'>إعادة تشغيل بطاقة الرسوميات</th><td><span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>G</kbd></span></td></tr><tr><th scope='row'>فتح اللوحة</th><td><span class="ltr"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>P</kbd></span></td></tr></table>
+        <p class="fine">انقر على الاختصار في الإعدادات ثم اضغط المفاتيح الجديدة؛ ويحذفه الزر ×. ويظهر الاختصار الذي يستخدمه تطبيق آخر باللون الأحمر.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap" id="arabic">
+    <div class="eyebrow reveal">العربية</div>
+    <h2 class="reveal">التطبيق كله بالعربية.</h2>
+    <p class="sub reveal">اللوحة والودجت والقوائم والرسائل كلها تُقرأ من اليمين إلى اليسار. واختر من الإعدادات، «اللغة»: <bdi dir="ltr">English</bdi> أو العربية أو تلقائي، وهو يتبع لغة العرض في <bdi dir="ltr">Windows</bdi>.</p>
+    
+    <div class="pair"><figure class="reveal"><div class="frame"><img src="../shots/panel-ar-settings.png" width="984" height="701" alt="صفحة الإعدادات في لوحة NJ-Flush بالعربية." loading="lazy" decoding="async"></div><figcaption>الإعدادات، بالعربية.</figcaption></figure><figure class="reveal"><div class="frame"><img src="../shots/widget-ar.png" width="448" height="144" alt="ودجت NJ-Flush في وضع العربية." loading="lazy" decoding="async"></div><figcaption>الودجت.</figcaption></figure></div>
+  </section>
+
+  <section class="wrap" id="download">
+    <div class="eyebrow reveal">التنزيل</div>
+    <h2 class="reveal">تنزيل واحد وموافقة مسؤول واحدة.</h2>
+    <div class="steps"><div class="step reveal"><b>1</b><div><h3>نزّل</h3><p>احصل على <code>NJ-Flush.exe</code> من أحدث إصدار. ملف واحد دون مثبّت.</p></div></div><div class="step reveal"><b>2</b><div><h3>وافق مرة واحدة</h3><p>يطلب التشغيل الأول موافقة المسؤول مرة واحدة. ينسخ <bdi dir="ltr">NJ-Flush</bdi> نفسه إلى <code>%LOCALAPPDATA%\NJ-Flush</code> ويسجّل مهمة مجدولة تعمل بالصلاحيات التي يحتاجها التفريغ.</p></div></div><div class="step reveal"><b>3</b><div><h3>افتح اللوحة</h3><p>بعدها تفتح النقرة المزدوجة اللوحة، ويعمل كل تفريغ دون أي رسالة.</p></div></div></div>
+    <div class="callout reveal">
+      <strong>قد يظهر تحذير <bdi dir="ltr">SmartScreen</bdi> عند أول تشغيل</strong>
+      <p>الملف غير موقّع رقميًا بعد. اختر «مزيد من المعلومات» ثم «تشغيل على أي حال».</p>
+    </div>
+    <p class="dl reveal"><a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><svg class="ico" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 17h12"/></svg><span>تنزيل <bdi dir="ltr">NJ-Flush.exe</bdi> لنظام <bdi dir="ltr">Windows 10</bdi> أو <bdi dir="ltr">11</bdi></span></a></p>
+    <p class="note reveal">يعمل على <bdi dir="ltr">Windows 10</bdi> و<bdi dir="ltr">11</bdi>. يخبرك <bdi dir="ltr">NJ-Flush</bdi> حين يصدر إصدار جديد ويحدّث نفسه بنقرة واحدة بعد التحقق من <bdi dir="ltr">SHA-256</bdi>. ويمكنك إزالته في أي وقت من قائمة الودجت.</p><p class="note reveal">حدود التفريغ: الذاكرة التي تحجزها برامج التشغيل والمشرف الافتراضي (<bdi dir="ltr">Hypervisor</bdi>) وتكامل الذاكرة وجداول الصفحات لا يصل إليها أي تفريغ. ويعرض لك «توزيع ذاكرة <bdi dir="ltr">RAM</bdi>» مقدارها.</p><p class="note reveal">خيار «أعد تشغيل مستكشف الملفات عند التفريغ» متوقف افتراضيًا منذ الإصدار <bdi dir="ltr">1.3</bdi>. وإن فعّلته فقد تتبعثر أيقونات سطح المكتب؛ وأداة <a href="https://nj-burrito.github.io/NJ-Sort/"><bdi dir="ltr">NJ-Sort</bdi></a> المرافقة تُبقي أيقونات سطح المكتب في أماكنها وتعيدها بعد أن يعيد <bdi dir="ltr">NJ-Flush</bdi> تشغيل المستكشف.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="col">
+      <h4>NJ-Flush</h4>
+      <span><bdi dir="ltr">NJ-Flush</bdi> من تطوير <a href="https://nj-burrito.github.io/">نادر الزغول</a>. رخصة <bdi dir="ltr">MIT</bdi>.</span>
+      <span>المؤثرات الصوتية من <a href="https://mixkit.co"><bdi dir="ltr">Mixkit</bdi></a>.</span>
+      <span>يُعرف أيضًا باسم <bdi dir="ltr">NJ Flush</bdi> و<bdi dir="ltr">nj-flush</bdi> و<bdi dir="ltr">nj</bdi>_<bdi dir="ltr">flush</bdi>. من تطوير نادر الزغول (<bdi dir="ltr">NJ-Burrito</bdi>)، حسابه على <bdi dir="ltr">GitHub</bdi>: <a href="https://github.com/NJ-Burrito"><bdi dir="ltr">NJ-Burrito</bdi></a>.</span>
+    </div>
+    <div class="col">
+      <h4>المزيد من <bdi dir="ltr">NJ-Burrito</bdi></h4>
+      <div class="more"><a href="https://nj-burrito.github.io/">موقع نادر الزغول</a> <a href="https://nj-burrito.github.io/QA-Wrap/">QA-Wrap</a> <a href="https://nj-burrito.github.io/Business-Wrap/">Business-Wrap</a> <a href="https://nj-burrito.github.io/NJ-Kit/">NJ-Kit</a> <a href="https://nj-burrito.github.io/NJ-Whip/">NJ-Whip</a> <a href="https://nj-burrito.github.io/Profile-Wrap/">Profile-Wrap</a> <a href="https://nj-burrito.github.io/story-wrap/">Story-Wrap</a> (<a href="https://github.com/NJ-Burrito/Story-Wrap">repo</a>) <a href="https://nj-burrito.github.io/NJ-Flush/">NJ-Flush</a> <a href="https://nj-burrito.github.io/NJ-Sort/">NJ-Sort</a></div>
+    </div>
+    <div class="alt"><p class="alt" lang="en" dir="ltr"><a href="../" hreflang="en">This page in English</a>: NJ-Flush, the free, open-source Windows RAM cleaner.</p></div>
+  </div>
+</footer>
+<script src="../site.js" defer></script>
+</body>
+</html>

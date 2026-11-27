@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- NJ-Flush logo, simplified variant for 16/20/24/32 px (bigger shapes, no blur, no fine detail).
+     Same silhouette and colours as logo.svg. Own vector art. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#26506E"/><stop offset="1" stop-color="#0B1626"/>
+    </linearGradient>
+    <linearGradient id="porc" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#B7C7D4"/>
+    </linearGradient>
+    <radialGradient id="water" cx="470" cy="660" r="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9BF0FF"/><stop offset="0.5" stop-color="#22D3EE"/><stop offset="1" stop-color="#0E8AA8"/>
+    </radialGradient>
+    <clipPath id="waterclip"><path d="M512 360C586 360 628 400 668 468C722 556 752 590 752 664C752 786 660 862 512 862C364 862 272 786 272 664C272 590 302 556 356 468C396 400 438 360 512 360Z"/></clipPath>
+  </defs>
+  <rect x="24" y="24" width="976" height="976" rx="224" fill="url(#tile)"/>
+  <rect x="48" y="48" width="928" height="928" rx="200" fill="none" stroke="#22D3EE" stroke-opacity="0.55" stroke-width="22"/>
+  <!-- tank -->
+  <rect x="290" y="126" width="444" height="210" rx="70" fill="url(#porc)"/>
+  <circle cx="512" cy="232" r="42" fill="#22D3EE"/>
+  <!-- bowl -->
+  <path d="M512 270C604 270 664 318 716 404C782 512 826 556 826 672C826 836 698 928 512 928C326 928 198 836 198 672C198 556 242 512 308 404C360 318 420 270 512 270Z" fill="#06101C" opacity="0.5" transform="translate(0 22)"/>
+  <path d="M512 270C604 270 664 318 716 404C782 512 826 556 826 672C826 836 698 928 512 928C326 928 198 836 198 672C198 556 242 512 308 404C360 318 420 270 512 270Z" fill="url(#porc)"/>
+  <!-- water -->
+  <g clip-path="url(#waterclip)">
+    <rect x="200" y="300" width="624" height="600" fill="url(#water)"/>
+    <g transform="translate(512 690)" fill="#FFFFFF">
+      <path id="a" d="M0 0C-8-88 52-170 168-166C84-138 34-80 0 0Z" opacity="0.95"/>
+      <path d="M0 0C-8-88 52-170 168-166C84-138 34-80 0 0Z" opacity="0.95" transform="rotate(120)"/>
+      <path d="M0 0C-8-88 52-170 168-166C84-138 34-80 0 0Z" opacity="0.95" transform="rotate(240)"/>
+    </g>
+    <circle cx="512" cy="690" r="52" fill="#06202F"/>
+  </g>
+</svg>

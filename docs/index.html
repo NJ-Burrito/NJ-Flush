@@ -110,8 +110,7 @@
 }
 </script>
 <link rel="icon" href="logo.png">
-<link rel="preconnect" href="https://unpkg.com" crossorigin>
-<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<script>document.documentElement.classList.add("js")</script>
 <style>
   /* Design read: landing for Windows power users, dark-tech with porcelain + cyan from the app's own art.
      Dials 7 / 5 / 3. Font: Thmanyah Sans when installed (never web-served: licence), else the system UI face. */
@@ -137,16 +136,19 @@
   .nav-links a { text-decoration: none; transition: color .2s; }
   .nav-links a:hover { color: var(--text); }
 
-  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 999px; font-weight: 600; text-decoration: none;
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 10px; font-weight: 600; text-decoration: none;
          white-space: nowrap; transition: transform .2s var(--ease), background-color .2s; }
   .btn:active { transform: scale(.97); }
   .btn-primary { background: var(--accent); color: var(--accent-ink); }
   .btn-primary:hover { transform: translateY(-1px); }
   .btn-ghost { border: 1px solid var(--line); }
   .btn-ghost:hover { background: var(--bg-2); }
-  .btn i { font-size: 18px; }
+  .btn .ico { flex: none; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+  h1, h2, h3 { text-wrap: balance; }
+  .lede, .sub, .note, .cell p, .tier p, .step p { text-wrap: pretty; }
 
-  .hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; padding: 56px 0 72px; min-height: calc(100dvh - 68px); }
+  .hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; padding: 56px 24px 72px; min-height: calc(100dvh - 68px); }
   h1 { font-size: clamp(40px, 5.4vw, 64px); line-height: 1.04; letter-spacing: -.035em; font-weight: 800; }
   h1 em { font-style: normal; color: var(--accent); }
   .lede { color: var(--muted); font-size: 19px; max-width: 34ch; margin: 22px 0 32px; }
@@ -155,7 +157,7 @@
            box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .7), inset 0 0 0 1px rgba(255, 255, 255, .06); }
   .stage video { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-  section { padding: 96px 0; }
+  section.wrap:not(.hero) { padding-top: 96px; padding-bottom: 96px; }
   h2 { font-size: clamp(30px, 3.6vw, 44px); line-height: 1.1; letter-spacing: -.025em; font-weight: 800; max-width: 20ch; }
   .sub { color: var(--muted); max-width: 60ch; margin-top: 14px; font-size: 18px; }
 
@@ -167,6 +169,7 @@
   .scale { display: grid; grid-template-columns: 80fr 10fr 6fr 4fr; font-size: 13px; color: var(--muted); margin-top: 8px; font-variant-numeric: tabular-nums; }
   .tiers { display: grid; grid-template-columns: 1.15fr 1fr; gap: 40px; margin-top: 48px; align-items: start; }
   .tier-list { display: grid; gap: 26px; }
+  .demo-note { color: var(--muted); font-size: 13px; margin-top: 8px; }
   .tier { display: grid; grid-template-columns: 12px 1fr; gap: 16px; }
   .tier::before { content: ""; width: 12px; border-radius: 6px; background: var(--c); }
   .tier h3 { font-size: 20px; letter-spacing: -.01em; }
@@ -177,18 +180,19 @@
 
   /* features bento: 6 items, 6 cells */
   .bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-top: 48px; }
-  .cell { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; display: flex; flex-direction: column; gap: 10px; min-height: 190px; }
-  .cell i { font-size: 28px; color: var(--accent); }
-  .cell h3 { font-size: 19px; letter-spacing: -.01em; }
+  .cell { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; display: flex; flex-direction: column; gap: 10px; min-height: 170px; }
+    .cell h3 { font-size: 19px; letter-spacing: -.01em; }
   .cell p { color: var(--muted); font-size: 15px; }
-  .c-a { grid-column: span 4; background: linear-gradient(135deg, #0b3b52, #0e7490 60%, #155e75); border: 0; color: #f0fdff; }
-  .c-a p, .c-a i { color: #cdeff6; }
+  .c-a { grid-column: span 4; background: var(--accent); border-color: var(--accent); color: var(--accent-ink); justify-content: flex-end; min-height: 230px; }
+  .c-a h3 { font-size: 26px; }
+  .c-a p { color: inherit; font-size: 16px; max-width: 52ch; }
   .c-b { grid-column: span 2; } .c-c { grid-column: span 2; } .c-d { grid-column: span 2; } .c-e { grid-column: span 2; }
   .c-f { grid-column: span 6; flex-direction: row; align-items: center; justify-content: space-between; gap: 24px;
-         background: radial-gradient(120% 140% at 100% 0, rgba(248, 113, 113, .14), transparent 60%), var(--bg-2); }
+         }
   kbd { font: 600 13px ui-monospace, "Cascadia Mono", Consolas, monospace; padding: 2px 7px; border-radius: 6px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); }
 
   /* a working replica of the widget */
+  .widget-wrap { flex: none; }
   .widget { width: 210px; padding: 9px 12px 10px; border-radius: 9px; background: #111827; color: #fff; font-variant-numeric: tabular-nums;
             box-shadow: 0 10px 30px rgba(0,0,0,.35); flex: none; }
   .widget .row { display: flex; justify-content: space-between; align-items: baseline; }
@@ -198,24 +202,23 @@
 
   .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 48px; border-top: 1px solid var(--line); }
   .step { padding: 28px 28px 0 0; }
-  .step h3 { font-size: 20px; display: flex; gap: 10px; align-items: center; }
-  .step h3 i { color: var(--accent); }
+  .step h3 { font-size: 20px; }
   .step p { color: var(--muted); margin-top: 8px; }
   .note { margin-top: 40px; color: var(--muted); font-size: 15px; max-width: 70ch; }
 
   footer { border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--muted); font-size: 14px; }
   footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 
-  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
-  .reveal.in { opacity: 1; transform: none; }
-  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } .widget .fill { transition: none; } }
+  .js .reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+  .js .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } .widget .fill { transition: none; } }
 
   @media (max-width: 860px) {
     .hero, .tiers { grid-template-columns: minmax(0, 1fr); }
     .hero > *, .tiers > * { min-width: 0; }
     body { overflow-x: hidden; }
     .wrap { padding-left: 16px; padding-right: 16px; }
-    section { padding-top: 64px; padding-bottom: 64px; }
+    section.wrap:not(.hero) { padding-top: 64px; padding-bottom: 64px; }
     nav .btn { padding: 9px 14px; }
     .hero { min-height: 0; padding-top: 24px; }
     .bento { grid-template-columns: 1fr; }
@@ -237,7 +240,7 @@
       <a href="#tiers">How it flushes</a>
       <a href="#features">Features</a>
       <a href="https://github.com/NJ-Burrito/NJ-Flush">Source</a>
-      <a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><i class="ph ph-download-simple"></i>Download</a>
+      <a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><svg class="ico" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 17h12"/></svg>Download</a>
     </div>
   </nav>
 </header>
@@ -248,8 +251,8 @@
       <h1><span class="kicker">NJ-Flush, the free Windows RAM cleaner</span>Your RAM is full. <em>Flush it.</em></h1>
       <p class="lede">One double-click hands memory back to Windows, while a toilet flushes on your screen.</p>
       <div class="ctas">
-        <a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><i class="ph ph-download-simple"></i>Download</a>
-        <a class="btn btn-ghost" href="https://github.com/NJ-Burrito/NJ-Flush"><i class="ph ph-github-logo"></i>Source</a>
+        <a class="btn btn-primary" href="https://github.com/NJ-Burrito/NJ-Flush/releases/latest"><svg class="ico" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 17h12"/></svg>Download</a>
+        <a class="btn btn-ghost" href="https://github.com/NJ-Burrito/NJ-Flush">Source</a>
       </div>
     </div>
     <div class="stage">
@@ -280,37 +283,36 @@
   </section>
 
   <section class="wrap" id="features">
-    <h2 class="reveal">Small, quiet, out of the way.</h2>
+    <h2 class="reveal">It sits above your clock and waits.</h2>
     <div class="bento">
       <div class="cell c-a reveal">
-        <i class="ph ph-broom"></i>
-        <h3>A real flush, not a placebo</h3>
+        <h3>It really frees the memory</h3>
         <p>Empties every working set, writes the modified list to disk, purges the standby cache and stops leftover helper processes from closed developer sessions. Nothing else is touched.</p>
       </div>
-      <div class="cell c-b reveal"><i class="ph ph-keyboard"></i><h3>Flush from anywhere</h3><p>Press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>F</kbd>, or double-click the widget.</p></div>
-      <div class="cell c-c reveal"><i class="ph ph-lightning"></i><h3>Auto-flush</h3><p>Turn it on and NJ-Flush flushes by itself when RAM stays at 90% for 30 seconds, at most once every 10 minutes.</p></div>
-      <div class="cell c-d reveal"><i class="ph ph-chart-pie-slice"></i><h3>Memory breakdown</h3><p>One bar shows what holds your RAM: apps, kernel, cache, free, and the share no flush can reach.</p></div>
-      <div class="cell c-e reveal"><i class="ph ph-sliders-horizontal"></i><h3>Make it yours</h3><p>Right-click the widget for Settings: turn the animation or sound off, set the volume, the wait between flushes and more.</p></div>
+      <div class="cell c-b reveal"><h3>Flush from anywhere</h3><p>Press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>F</kbd>, or double-click the widget.</p></div>
+      <div class="cell c-c reveal"><h3>Auto-flush</h3><p>Turn it on and NJ-Flush flushes by itself when RAM stays at 90% for 30 seconds, at most once every 10 minutes.</p></div>
+      <div class="cell c-d reveal"><h3>Memory breakdown</h3><p>One bar shows what holds your RAM: apps, kernel, cache, free, and the share no flush can reach.</p></div>
+      <div class="cell c-e reveal"><h3>Make it yours</h3><p>Right-click the widget for Settings: turn the animation or sound off, set the volume, the wait between flushes and more.</p></div>
       <div class="cell c-f reveal">
         <div>
           <h3>The widget above your clock</h3>
-          <p>Live RAM, dim until you hover. Its bar takes the colour of the flush it would play. Try it:</p>
+          <p>Live RAM, dim until you hover. Its bar takes the colour of the flush it would play. Drag the slider:</p>
           <p style="margin-top:12px"><input type="range" id="ram" min="30" max="99" value="74" aria-label="RAM in use" style="width:min(320px,100%);accent-color:var(--accent)"></p>
         </div>
-        <div class="widget" aria-live="polite">
+        <div class="widget-wrap"><div class="widget" aria-live="polite">
           <div class="row"><b id="w-pct">74%</b><small id="w-gb">11.73/15.85 GB</small></div>
           <div class="track"><div class="fill" id="w-fill"></div></div>
-        </div>
+        </div><p class="demo-note">Example figures, not read from your PC.</p></div>
       </div>
     </div>
   </section>
 
   <section class="wrap" id="install">
-    <h2 class="reveal">Three steps, one prompt, ever.</h2>
+    <h2 class="reveal">One download, one admin prompt.</h2>
     <div class="steps">
-      <div class="step reveal"><h3><i class="ph ph-download-simple"></i>Download</h3><p>Get <code>NJ-Flush.exe</code> from the latest release. One file, no installer.</p></div>
-      <div class="step reveal"><h3><i class="ph ph-shield-check"></i>Approve once</h3><p>The first run asks for admin rights one time, to register the task a RAM flush needs.</p></div>
-      <div class="step reveal"><h3><i class="ph ph-drop"></i>Flush</h3><p>From then on, every double-click flushes with no prompt at all.</p></div>
+      <div class="step reveal"><h3>Download</h3><p>Get <code>NJ-Flush.exe</code> from the latest release. One file, no installer.</p></div>
+      <div class="step reveal"><h3>Approve once</h3><p>The first run asks for admin rights one time, to register the task a RAM flush needs.</p></div>
+      <div class="step reveal"><h3>Flush</h3><p>From then on, every double-click flushes with no prompt at all.</p></div>
     </div>
     <p class="note reveal">Windows 10 or 11. NJ-Flush tells you when a new version is out and updates itself in one click. The file is not code-signed yet, so SmartScreen may ask on the first run: choose More info, then Run anyway. Uninstall any time from the widget's menu.</p>
     <p class="note reveal">The setting <strong>Restart File Explorer on flush</strong> frees Explorer's memory but can shuffle your desktop icons. <a href="https://nj-burrito.github.io/NJ-Sort/">NJ-Sort</a>, a companion tool, keeps Windows desktop icons where you put them and puts them back after NJ-Flush restarts File Explorer.</p>

@@ -1,4 +1,4 @@
-﻿// NJ-Flush strings, English and Arabic (Nader 2026-11-27: "add an Arabic version, the app itself, fully, right-to-left").
+// NJ-Flush strings, English and Arabic (Nader 2026-11-27: "add an Arabic version, the app itself, fully, right-to-left").
 // One table: key -> (English, Arabic). Every word the user can read goes through Tx.T(key) / Tx.F(key, args); nothing else holds copy.
 //
 // Language: settings.ini `language=auto|en|ar` (auto = Arabic when the Windows display language is Arabic, else English), chosen on the

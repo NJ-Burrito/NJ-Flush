@@ -1,4 +1,3 @@
-// NJ-Flush: the RAM page's breakdown (where the RAM is), drawn inside the panel.
 using System;
 using System.Diagnostics;
 using System.Drawing;
@@ -109,4 +108,3 @@ static class BreakdownWindow {
 
     }
 }
-

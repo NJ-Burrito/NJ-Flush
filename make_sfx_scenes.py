@@ -3,7 +3,7 @@ recordings in sfx/ (ids listed in sfx/CREDITS.md; the raw wavs are not committed
 
 The cue sheet is design/1.3-scenes.md. Every time in it is REAL milliseconds from the moment the scene is first on
 screen (no SPEED factor, unlike make_sfx.py), and the scene's wav is played from that same moment. Each wav is as long
-as the variant plus a 300 ms tail. Change a cue in the sheet / Scenes.cs -> change it here.
+as the variant plus a 300 ms tail. Change a cue in the sheet / src/Scenes/*.cs -> change it here.
 Placement: each recording is trimmed to its first audible sample (3% of its peak), so the sound STARTS on the cue.
 Level: each track peaks at 10% full scale or lower (Nader 2026-11-23: "10%, smooth, not loud, just sfx").
 Beds (fan hum, shower, steam hiss) sit about 6 dB under the one-shots (clicks, squeaks, chimes).

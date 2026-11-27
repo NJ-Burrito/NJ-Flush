@@ -7,4 +7,4 @@ if not exist dist mkdir dist
   /resource:scene-cpu-0.wav,scene-cpu-0.wav /resource:scene-cpu-1.wav,scene-cpu-1.wav /resource:scene-cpu-2.wav,scene-cpu-2.wav /resource:scene-cpu-3.wav,scene-cpu-3.wav /resource:scene-gpu-0.wav,scene-gpu-0.wav /resource:scene-gpu-1.wav,scene-gpu-1.wav /resource:scene-gpu-2.wav,scene-gpu-2.wav /resource:scene-gpu-3.wav,scene-gpu-3.wav /resource:scene-all-0.wav,scene-all-0.wav /resource:scene-all-1.wav,scene-all-1.wav /resource:scene-all-2.wav,scene-all-2.wav /resource:scene-all-3.wav,scene-all-3.wav ^
   /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:"%FW%\WPF\PresentationFramework.dll" ^
   /r:"%FW%\WPF\PresentationCore.dll" /r:"%FW%\WPF\WindowsBase.dll" /r:System.Xaml.dll /r:System.Management.dll ^
-  /out:dist\NJ-Flush.exe NJFlush.cs Res.cs Work.cs Panel.cs Theme.cs Scenes.cs SceneFan.cs SceneMirror.cs SceneShower.cs SceneToilet.cs Widget.cs UiRender.cs Breakdown.cs Strings.cs
+  /out:dist\NJ-Flush.exe /recurse:src\*.cs
